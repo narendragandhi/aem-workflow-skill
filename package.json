@@ -1,0 +1,37 @@
+{
+  "name": "aem-workflow-skill",
+  "version": "1.0.0",
+  "description": "Claude AI skill for AEM workflow development in Adobe Experience Manager as a Cloud Service",
+  "keywords": [
+    "adobe-experience-manager",
+    "aem",
+    "claude-ai",
+    "ai-skill",
+    "workflow",
+    "aem-cloud-service",
+    "java",
+    "claude-code"
+  ],
+  "author": "narendragandhi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/narendragandhi/aem-workflow-skill.git"
+  },
+  "homepage": "https://github.com/narendragandhi/aem-workflow-skill#readme",
+  "bugs": {
+    "url": "https://github.com/narendragandhi/aem-workflow-skill/issues"
+  },
+  "bin": {
+    "aem-workflow-skill": "./bin/install.js"
+  },
+  "files": [
+    "bin/",
+    "skills/",
+    "docs/",
+    "examples/"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

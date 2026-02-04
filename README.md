@@ -2,6 +2,7 @@
 
 > A comprehensive Claude AI skill for developing custom workflows in Adobe Experience Manager (AEM) as a Cloud Service
 
+[![npm version](https://img.shields.io/npm/v/aem-workflow-skill.svg)](https://www.npmjs.com/package/aem-workflow-skill)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![AEM Cloud Service](https://img.shields.io/badge/AEM-Cloud%20Service-blue.svg)](https://experienceleague.adobe.com/docs/experience-manager-cloud-service.html)
 [![Java 21](https://img.shields.io/badge/Java-21%20LTS-orange.svg)](https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html)
@@ -25,23 +26,41 @@ This Claude AI skill provides expert guidance for developing custom workflows in
 
 ### Installation
 
+#### Option 1: npm/npx (Recommended)
+
+```bash
+# Install to current project
+npx aem-workflow-skill
+
+# Install globally (to ~/.claude/skills/)
+npx aem-workflow-skill --global
+
+# Uninstall
+npx aem-workflow-skill --uninstall
+```
+
+#### Option 2: Claude Code Plugin
+
+```bash
+# In Claude Code, run:
+/plugin marketplace add narendragandhi/aem-workflow-skill
+```
+
+#### Option 3: Manual Installation
+
 1. **Download the Skill**
    ```bash
    # Clone this repository
-   git clone https://github.com/YOUR-USERNAME/aem-workflow-skill.git
+   git clone https://github.com/narendragandhi/aem-workflow-skill.git
    cd aem-workflow-skill
-   
-   # The skill file is in the releases/ directory
+
+   # Copy the skill file to your project
+   mkdir -p .claude/skills
+   cp skills/aem-workflow/SKILL.md .claude/skills/aem-workflow.md
    ```
 
-2. **Install in Claude Desktop**
-   - Open Claude Desktop → Settings → Skills
-   - Click "Add Skill"
-   - Select `aem-workflow-development.skill`
-   - Skill activates automatically for workflow-related queries
-
-3. **Start Using**
-   - Open Claude Desktop or Claude.ai
+2. **Start Using**
+   - Open Claude Code in your project
    - Ask any AEM workflow development question
    - The skill automatically provides expert guidance
 
