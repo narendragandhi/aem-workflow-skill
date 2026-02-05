@@ -395,6 +395,207 @@ ResourceResolver resolver = workflowSession.adaptTo(ResourceResolver.class);
 - Post-processing workflows for custom asset operations (configured per folder)
 - Custom workflow models for non-asset content processing
 
+## Security Best Practices
+
+### Input Validation and Sanitization
+
+Always validate and sanitize user inputs in workflow processes:
+
+```java
+private String sanitizeGroupName(String input) {
+    if (input == null) {
+        return "default";
+    }
+    return input.replaceAll("[^a-zA-Z0-9-_]", "");
+}
+
+private String sanitizePath(String path) {
+    if (path == null) {
+        return null;
+    }
+    return path.replaceAll("[^a-zA-Z0-9/._-]", "");
+}
+
+private String extractDepartment(String path) {
+    if (path == null) {
+        return "default";
+    }
+    String[] segments = path.split("/");
+    if (segments.length > 3) {
+        return sanitizeGroupName(segments[3]);
+    }
+    return "default";
+}
+```
+
+**Key validation rules:**
+- Reject paths containing `..` (parent directory traversal)
+- Sanitize user-provided group names to prevent injection
+- Validate workflow payload paths are within expected locations
+- Use allowlist validation when possible
+
+### Service User Configuration
+
+Use dedicated service users with minimal required permissions:
+
+```java
+@Reference
+private ResourceResolverFactory resolverFactory;
+
+private ResourceResolver getServiceResolver() throws LoginException {
+    Map<String, Object> authInfo = Collections.singletonMap(
+        ResourceResolverFactory.SUBSERVICE,
+        "workflow-service"
+    );
+    return resolverFactory.getServiceResourceResolver(authInfo);
+}
+```
+
+**Service user best practices:**
+- Create dedicated service users for each workflow subsystem
+- Use `subservice` authentication (not username/password)
+- Grant only read/write permissions for specific paths
+- Never use administrative accounts in workflow code
+
+### Permission Model for Approval Workflows
+
+Design permission scopes carefully:
+
+```java
+/**
+ * Approval workflow permission structure:
+ *
+ * /content/projects/[project]
+ *   ├── authors (contributors)
+ *   │   └── can create, edit own content
+ *   ├── reviewers (reviewers)
+ *   │   └── can approve/reject content
+ *   ├── managers (managers)
+ *   │   └── can escalate, override decisions
+ *   └── governance (content governance)
+ *       └── final approval authority
+ */
+```
+
+**Permission hierarchy:**
+- Authors: Create and edit content, submit for review
+- Reviewers: Approve/reject at department level
+- Managers: Escalate issues, override decisions
+- Governance: Final approval authority
+
+### Preventing Workflow Injection
+
+Secure workflow model references:
+
+```java
+private static final String WORKFLOW_MODEL_PATH_PREFIX = "/var/workflow/models/";
+
+private WorkflowModel getValidatedModel(WorkflowSession session, String modelPath)
+        throws WorkflowException {
+    // Validate path prefix to prevent injection
+    if (modelPath == null || !modelPath.startsWith(WORKFLOW_MODEL_PATH_PREFIX)) {
+        throw new WorkflowException("Invalid workflow model path");
+    }
+
+    // Prevent path traversal attacks
+    String normalizedPath = modelPath.replaceAll("\\.\\.", "");
+    return session.getModel(normalizedPath);
+}
+```
+
+### Secure Workflow Metadata Handling
+
+Protect sensitive workflow metadata:
+
+```java
+private static final String[] SENSITIVE_KEYS = {
+    "password",
+    "apiKey",
+    "secret",
+    "credential"
+};
+
+private boolean isSensitiveKey(String key) {
+    if (key == null) return false;
+    key = key.toLowerCase();
+    for (String sensitive : SENSITIVE_KEYS) {
+        if (key.contains(sensitive)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+private void storeMetadataSafely(MetaDataMap metadata, String key, String value) {
+    if (isSensitiveKey(key)) {
+        LOG.warn("Refusing to store potentially sensitive metadata: {}", key);
+        return;
+    }
+    metadata.put(key, value);
+}
+```
+
+### Audit Logging
+
+Log workflow actions for security auditing:
+
+```java
+private void logWorkflowAction(String action, String user, String payload) {
+    Map<String, Object> auditData = new HashMap<>();
+    auditData.put("action", action);
+    auditData.put("user", user);
+    auditData.put("payload", sanitizePath(payload));
+    auditData.put("timestamp", System.currentTimeMillis());
+
+    LOG.info("WORKFLOW_AUDIT: {}", auditData);
+}
+```
+
+**Audit log recommendations:**
+- Log all approval/rejection decisions with user ID
+- Log escalation events and reasons
+- Log workflow initiation and completion
+- Include payload path (sanitized) in all log entries
+
+### CSRF Protection for Workflow APIs
+
+When workflow APIs are exposed externally:
+
+```java
+private static final Set<String> VALID_TOKENS = ConcurrentHashMap.newKeySet();
+
+public boolean validateCsrfToken(String token, String userId) {
+    if (token == null || userId == null) {
+        return false;
+    }
+    return VALID_TOKENS.contains(token) && !isExpired(token);
+}
+```
+
+### Secure Process Arguments
+
+Validate workflow process arguments:
+
+```java
+private static final Set<String> ALLOWED_PROCESS_ARGS = Set.of(
+    "DECISION",
+    "COMMENTS",
+    "THRESHOLD_HOURS"
+);
+
+private void validateProcessArgs(String args) throws WorkflowException {
+    if (args == null || args.isEmpty()) {
+        return;
+    }
+    for (String part : args.split(",")) {
+        String key = part.split(":")[0];
+        if (!ALLOWED_PROCESS_ARGS.contains(key)) {
+            throw new WorkflowException("Invalid process argument: " + key);
+        }
+    }
+}
+```
+
 ## Testing Workflows
 
 ### Unit Testing with Mocks
@@ -467,6 +668,99 @@ public class CustomParticipantChooser implements ParticipantStepChooser {
         }
         
         return "administrators"; // Default group
+    }
+}
+```
+
+### Custom Dialogs for Participant Steps
+
+For participant steps that require user input beyond simple approval, you can create custom dialogs. These dialogs are built using Granite UI components, similar to authoring dialogs.
+
+**Use Cases:**
+- Capturing rejection reasons.
+- Assigning a task to a specific user from a dropdown.
+- Collecting metadata that needs to be reviewed before approval.
+
+**Creating a Custom Dialog:**
+
+1.  **Create the Dialog Node:** Create a `cq:Dialog` node in your project, for example, at `/apps/my-project/workflow/dialogs/my-dialog`.
+2.  **Define the Dialog Structure:** Use Granite UI components to build the dialog. The following is an example of a dialog with a comment field and a dropdown to approve or reject.
+
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+              xmlns:cq="http://www.day.com/jcr/cq/1.0"
+              xmlns:jcr="http://www.jcp.org/jcr/1.0"
+              xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+              jcr:primaryType="nt:unstructured"
+              jcr:title="Approval Dialog"
+              sling:resourceType="cq/gui/components/authoring/dialog">
+        <content
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="granite/ui/components/coral/foundation/fixedcolumns">
+            <items jcr:primaryType="nt:unstructured">
+                <column
+                    jcr:primaryType="nt:unstructured"
+                    sling:resourceType="granite/ui/components/coral/foundation/container">
+                    <items jcr:primaryType="nt:unstructured">
+                        <comment
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textarea"
+                            fieldLabel="Comment"
+                            name="comment"/>
+                        <decision
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/select"
+                            fieldLabel="Decision"
+                            name="decision">
+                            <items jcr:primaryType="nt:unstructured">
+                                <approve
+                                    jcr:primaryType="nt:unstructured"
+                                    text="Approve"
+                                    value="approve"/>
+                                <reject
+                                    jcr:primaryType="nt:unstructured"
+                                    text="Reject"
+                                    value="reject"/>
+                            </items>
+                        </decision>
+                    </items>
+                </column>
+            </items>
+        </content>
+    </jcr:root>
+    ```
+3.  **Configure the Participant Step:** In your workflow model, select the "Dialog Participant Step" and set the "Dialog Path" property to the path of your dialog node (e.g., `/apps/my-project/workflow/dialogs/my-dialog/cq:dialog`).
+
+**Accessing Dialog Data in the Workflow:**
+
+The data entered in the dialog is stored in the workflow's metadata. You can access it in a subsequent workflow step.
+
+```java
+@Component(
+    service = WorkflowProcess.class,
+    property = {
+        "process.label=Process Approval Step"
+    }
+)
+public class ProcessApprovalStep implements WorkflowProcess {
+    
+    @Override
+    public void execute(WorkItem workItem, WorkflowSession workflowSession, MetaDataMap metaDataMap) 
+            throws WorkflowException {
+        
+        // Get the workflow metadata
+        MetaDataMap workflowMetadata = workItem.getWorkflow().getMetaDataMap();
+        
+        // Get the data from the dialog
+        String comment = workflowMetadata.get("comment", String.class);
+        String decision = workflowMetadata.get("decision", String.class);
+        
+        if ("approve".equals(decision)) {
+            // Logic for approval
+        } else if ("reject".equals(decision)) {
+            // Logic for rejection, using the comment
+        }
     }
 }
 ```
@@ -549,6 +843,8 @@ wfMetadata.put("stageStartTime", System.currentTimeMillis());
 
 ## Advanced Topics
 
+**Note:** The following sections describe features available in the popular open-source library ACS AEM Commons. These are powerful tools for advanced workflow scenarios, but they are not required to use this skill. This skill does not have a dependency on ACS AEM Commons.
+
 ### Asset Processing in Cloud Service
 
 **Asset Microservices vs Traditional Workflows:**
@@ -619,6 +915,21 @@ public class CustomAssetPostProcessor implements WorkflowProcess {
 - Configure as part of processing profiles
 - Runs in Adobe I/O Runtime
 
+### Bulk Workflow Manager (ACS Commons)
+
+ACS AEM Commons provides a powerful tool for running workflows on a large number of resources in bulk. This is particularly useful for content migrations, bulk updates, or reprocessing large sets of assets.
+
+**Key Features:**
+- **Bulk Execution**: Run a workflow model against a list of payloads.
+- **Query-based Payloads**: Use a JCR2 query to dynamically select the resources to process.
+- **Throttling**: Control the rate at which workflows are created to avoid overwhelming the system.
+- **Synthetic Workflow Integration**: Can be used with Synthetic Workflows for high-performance processing.
+
+**When to Use It:**
+- Activating a large number of pages.
+- Applying a new metadata schema to thousands of assets.
+- Running a custom workflow on all content within a specific path.
+
 ### Workflow Variables (External Storage)
 
 For sensitive data or large payloads, configure external storage:
@@ -633,6 +944,19 @@ MetaDataMap metadata = workItem.getWorkflow().getMetaDataMap();
 ```
 
 ### Synthetic Workflow (ACS Commons)
+
+Synthetic Workflow is a feature of ACS AEM Commons that allows for the execution of AEM Workflow Processes without the overhead of the full AEM Workflow Engine. It directly calls the `WorkflowProcess` implementation, bypassing the creation of Sling Jobs and workflow instances.
+
+**Benefits:**
+- **Performance**: Much faster than traditional workflows, especially for a large number of invocations.
+- **Simplicity**: Avoids the complexity of creating and managing workflow models for simple, single-process tasks.
+- **Reduced Load**: Less impact on the AEM instance's resources.
+
+**Limitations:**
+- **No External Steps**: Does not support steps that are not implemented as a `WorkflowProcess`.
+- **No Participant Steps**: Cannot be used for workflows that require user interaction.
+- **Single Process**: Only supports a single `WorkflowProcess` step.
+- **No Transitions**: Does not support multiple transition paths.
 
 For high-performance bulk processing without full workflow engine overhead (primarily for SDK/local development):
 

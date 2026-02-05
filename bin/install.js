@@ -5,7 +5,7 @@ const path = require('path');
 const os = require('os');
 
 const SKILL_NAME = 'aem-workflow';
-const VERSION = '1.2.0';
+const VERSION = '1.1.5';
 
 // Platform configurations
 const PLATFORMS = {
