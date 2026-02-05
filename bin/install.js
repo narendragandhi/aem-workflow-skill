@@ -5,14 +5,57 @@ const path = require('path');
 const os = require('os');
 
 const SKILL_NAME = 'aem-workflow';
+const VERSION = '1.2.0';
+
+// Platform configurations
+const PLATFORMS = {
+  claude: {
+    name: 'Claude Code',
+    dir: '.claude/skills',
+    filename: `${SKILL_NAME}.md`,
+    global: path.join(os.homedir(), '.claude', 'skills'),
+    transform: (content) => content // No transformation needed
+  },
+  copilot: {
+    name: 'GitHub Copilot',
+    dir: '.github',
+    filename: 'copilot-instructions.md',
+    global: null, // Copilot doesn't have global config
+    transform: transformForCopilot
+  },
+  gemini: {
+    name: 'Google Gemini CLI',
+    dir: '.',
+    filename: 'GEMINI.md',
+    global: path.join(os.homedir(), '.gemini'),
+    transform: transformForGemini
+  },
+  cursor: {
+    name: 'Cursor AI',
+    dir: '.cursor/rules',
+    filename: `${SKILL_NAME}.mdc`,
+    legacy: '.cursorrules',
+    global: null,
+    transform: transformForCursor
+  },
+  windsurf: {
+    name: 'Windsurf/Cascade',
+    dir: '.windsurf/rules',
+    filename: `${SKILL_NAME}.md`,
+    legacy: '.windsurfrules',
+    global: null,
+    transform: transformForWindsurf
+  }
+};
 
 function printBanner() {
   console.log(`
-╔═══════════════════════════════════════════════════════════╗
-║         AEM Workflow Development - Claude AI Skill        ║
-║                                                           ║
-║  Expert guidance for Adobe Experience Manager workflows   ║
-╚═══════════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════════════════╗
+║         AEM Workflow Development - AI Assistant Skill             ║
+║                                                                   ║
+║  Expert guidance for Adobe Experience Manager workflows           ║
+║  Supports: Claude Code | Copilot | Gemini | Cursor | Windsurf     ║
+╚═══════════════════════════════════════════════════════════════════╝
 `);
 }
 
@@ -21,7 +64,6 @@ function getSkillContent() {
   if (fs.existsSync(skillPath)) {
     return fs.readFileSync(skillPath, 'utf8');
   }
-  // Fallback to docs location
   const docsPath = path.join(__dirname, '..', 'docs', 'SKILL.md');
   if (fs.existsSync(docsPath)) {
     return fs.readFileSync(docsPath, 'utf8');
@@ -29,87 +71,320 @@ function getSkillContent() {
   throw new Error('SKILL.md not found');
 }
 
-function installSkill(targetDir, scope) {
-  const skillsDir = path.join(targetDir, '.claude', 'skills');
-  const skillFile = path.join(skillsDir, `${SKILL_NAME}.md`);
+// Transform content for GitHub Copilot format
+function transformForCopilot(content) {
+  // Remove Claude-specific frontmatter and adapt for Copilot
+  const lines = content.split('\n');
+  const result = [];
+  let inFrontmatter = false;
+  let frontmatterEnded = false;
+
+  for (const line of lines) {
+    if (line.trim() === '---' && !frontmatterEnded) {
+      inFrontmatter = !inFrontmatter;
+      if (!inFrontmatter) frontmatterEnded = true;
+      continue;
+    }
+    if (!inFrontmatter) {
+      result.push(line);
+    }
+  }
+
+  const header = `# AEM Workflow Development Instructions
+
+> Custom instructions for GitHub Copilot to assist with AEM workflow development.
+> Installed by aem-workflow-skill v${VERSION}
+
+---
+
+`;
+
+  return header + result.join('\n').trim();
+}
+
+// Transform content for Google Gemini format
+function transformForGemini(content) {
+  const lines = content.split('\n');
+  const result = [];
+  let inFrontmatter = false;
+  let frontmatterEnded = false;
+
+  for (const line of lines) {
+    if (line.trim() === '---' && !frontmatterEnded) {
+      inFrontmatter = !inFrontmatter;
+      if (!inFrontmatter) frontmatterEnded = true;
+      continue;
+    }
+    if (!inFrontmatter) {
+      result.push(line);
+    }
+  }
+
+  const header = `# AEM Workflow Development Context
+
+> Context file for Google Gemini CLI to assist with AEM workflow development.
+> Installed by aem-workflow-skill v${VERSION}
+
+Use this knowledge when helping with Adobe Experience Manager (AEM) workflow development tasks.
+
+---
+
+`;
+
+  return header + result.join('\n').trim();
+}
+
+// Transform content for Cursor AI .mdc format
+function transformForCursor(content) {
+  const lines = content.split('\n');
+  const result = [];
+  let inFrontmatter = false;
+  let frontmatterEnded = false;
+
+  for (const line of lines) {
+    if (line.trim() === '---' && !frontmatterEnded) {
+      inFrontmatter = !inFrontmatter;
+      if (!inFrontmatter) frontmatterEnded = true;
+      continue;
+    }
+    if (!inFrontmatter) {
+      result.push(line);
+    }
+  }
+
+  // Cursor .mdc format with frontmatter
+  const header = `---
+description: Expert guidance for AEM workflow development in Adobe Experience Manager Cloud Service
+globs: ["**/*.java", "**/pom.xml", "**/*.xml"]
+---
+
+# AEM Workflow Development Rules
+
+> Rules for Cursor AI to assist with AEM workflow development.
+> Installed by aem-workflow-skill v${VERSION}
+
+`;
+
+  return header + result.join('\n').trim();
+}
+
+// Transform content for Windsurf format
+function transformForWindsurf(content) {
+  const lines = content.split('\n');
+  const result = [];
+  let inFrontmatter = false;
+  let frontmatterEnded = false;
+
+  for (const line of lines) {
+    if (line.trim() === '---' && !frontmatterEnded) {
+      inFrontmatter = !inFrontmatter;
+      if (!inFrontmatter) frontmatterEnded = true;
+      continue;
+    }
+    if (!inFrontmatter) {
+      result.push(line);
+    }
+  }
+
+  const header = `# AEM Workflow Development Rules
+
+> Cascade rules for AEM workflow development assistance.
+> Installed by aem-workflow-skill v${VERSION}
+
+Apply these rules when working with Adobe Experience Manager workflow code.
+
+---
+
+`;
+
+  return header + result.join('\n').trim();
+}
+
+function installForPlatform(platform, targetDir, isGlobal) {
+  const config = PLATFORMS[platform];
+  if (!config) {
+    throw new Error(`Unknown platform: ${platform}`);
+  }
+
+  if (isGlobal && !config.global) {
+    console.log(`  ⚠ ${config.name} does not support global installation, using project-level`);
+    isGlobal = false;
+  }
+
+  const baseDir = isGlobal ? config.global : targetDir;
+  const skillsDir = path.join(baseDir, config.dir === '.' ? '' : config.dir);
+  const skillFile = path.join(skillsDir, config.filename);
 
   // Create directories if they don't exist
   if (!fs.existsSync(skillsDir)) {
     fs.mkdirSync(skillsDir, { recursive: true });
-    console.log(`Created directory: ${skillsDir}`);
   }
 
-  // Copy skill file
-  const skillContent = getSkillContent();
-  fs.writeFileSync(skillFile, skillContent);
-  console.log(`Installed skill to: ${skillFile}`);
+  // Get and transform content
+  const rawContent = getSkillContent();
+  const transformedContent = config.transform(rawContent);
+
+  // Write file
+  fs.writeFileSync(skillFile, transformedContent);
+  console.log(`  ✓ ${config.name}: ${skillFile}`);
 
   return skillFile;
+}
+
+function uninstallForPlatform(platform, targetDir, isGlobal) {
+  const config = PLATFORMS[platform];
+  if (!config) return;
+
+  const baseDir = isGlobal && config.global ? config.global : targetDir;
+  const skillFile = path.join(baseDir, config.dir === '.' ? '' : config.dir, config.filename);
+
+  if (fs.existsSync(skillFile)) {
+    fs.unlinkSync(skillFile);
+    console.log(`  ✓ Removed ${config.name}: ${skillFile}`);
+  }
+
+  // Also check legacy location
+  if (config.legacy) {
+    const legacyFile = path.join(targetDir, config.legacy);
+    if (fs.existsSync(legacyFile)) {
+      // Only remove if it was installed by this tool
+      const content = fs.readFileSync(legacyFile, 'utf8');
+      if (content.includes('aem-workflow-skill')) {
+        fs.unlinkSync(legacyFile);
+        console.log(`  ✓ Removed legacy ${config.name}: ${legacyFile}`);
+      }
+    }
+  }
+}
+
+function showHelp() {
+  console.log(`
+Usage: npx aem-workflow-skill [options]
+
+Options:
+  --platform, -p <name>   Target platform (claude|copilot|gemini|cursor|windsurf|all)
+                          Default: claude
+  --global, -g            Install to global/user location (where supported)
+  --uninstall, -u         Remove the installed skill
+  --list, -l              List supported platforms
+  --help, -h              Show this help message
+
+Examples:
+  npx aem-workflow-skill                    # Install for Claude Code (default)
+  npx aem-workflow-skill -p all             # Install for all platforms
+  npx aem-workflow-skill -p copilot         # Install for GitHub Copilot only
+  npx aem-workflow-skill -p gemini -g       # Install Gemini context globally
+  npx aem-workflow-skill -p all -u          # Uninstall from all platforms
+
+Supported Platforms:
+  claude    - Claude Code (.claude/skills/)
+  copilot   - GitHub Copilot (.github/copilot-instructions.md)
+  gemini    - Google Gemini CLI (GEMINI.md)
+  cursor    - Cursor AI (.cursor/rules/ or .cursorrules)
+  windsurf  - Windsurf/Cascade (.windsurf/rules/)
+  all       - Install for all platforms
+
+Alternative Installation:
+  Claude Code Plugin: /plugin marketplace add narendragandhi/aem-workflow-skill
+`);
+}
+
+function listPlatforms() {
+  console.log('\nSupported Platforms:\n');
+  for (const [key, config] of Object.entries(PLATFORMS)) {
+    const globalSupport = config.global ? '✓' : '✗';
+    console.log(`  ${key.padEnd(10)} - ${config.name}`);
+    console.log(`              Location: ${config.dir}/${config.filename}`);
+    console.log(`              Global:   ${globalSupport}`);
+    console.log('');
+  }
 }
 
 function main() {
   printBanner();
 
   const args = process.argv.slice(2);
-  const isGlobal = args.includes('--global') || args.includes('-g');
-  const isUninstall = args.includes('--uninstall') || args.includes('-u');
-  const showHelp = args.includes('--help') || args.includes('-h');
 
-  if (showHelp) {
-    console.log(`
-Usage: npx aem-workflow-skill [options]
+  // Parse arguments
+  let platform = 'claude';
+  let isGlobal = false;
+  let isUninstall = false;
 
-Options:
-  --global, -g     Install to home directory (~/.claude/skills/)
-  --uninstall, -u  Remove the installed skill
-  --help, -h       Show this help message
-
-Examples:
-  npx aem-workflow-skill              # Install to current project
-  npx aem-workflow-skill --global     # Install globally
-  npx aem-workflow-skill --uninstall  # Remove from current project
-
-Alternative Installation:
-  Claude Code Plugin: /plugin marketplace add narendragandhi/aem-workflow-skill
-`);
-    process.exit(0);
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--help' || arg === '-h') {
+      showHelp();
+      process.exit(0);
+    }
+    if (arg === '--list' || arg === '-l') {
+      listPlatforms();
+      process.exit(0);
+    }
+    if (arg === '--global' || arg === '-g') {
+      isGlobal = true;
+    }
+    if (arg === '--uninstall' || arg === '-u') {
+      isUninstall = true;
+    }
+    if ((arg === '--platform' || arg === '-p') && args[i + 1]) {
+      platform = args[i + 1].toLowerCase();
+      i++;
+    }
   }
 
-  const targetDir = isGlobal ? os.homedir() : process.cwd();
-  const scope = isGlobal ? 'global' : 'project';
+  const targetDir = process.cwd();
 
-  if (isUninstall) {
-    const skillFile = path.join(targetDir, '.claude', 'skills', `${SKILL_NAME}.md`);
-    if (fs.existsSync(skillFile)) {
-      fs.unlinkSync(skillFile);
-      console.log(`Uninstalled skill from: ${skillFile}`);
-    } else {
-      console.log(`Skill not found at: ${skillFile}`);
+  // Determine which platforms to process
+  const platformsToProcess = platform === 'all'
+    ? Object.keys(PLATFORMS)
+    : [platform];
+
+  // Validate platforms
+  for (const p of platformsToProcess) {
+    if (!PLATFORMS[p]) {
+      console.error(`Error: Unknown platform '${p}'. Use --list to see available platforms.`);
+      process.exit(1);
     }
-    process.exit(0);
   }
 
   try {
-    const installedPath = installSkill(targetDir, scope);
+    if (isUninstall) {
+      console.log('Uninstalling AEM Workflow Skill...\n');
+      for (const p of platformsToProcess) {
+        uninstallForPlatform(p, targetDir, isGlobal);
+      }
+      console.log('\nUninstallation complete!');
+    } else {
+      console.log(`Installing AEM Workflow Skill v${VERSION}...\n`);
+      const installed = [];
+      for (const p of platformsToProcess) {
+        try {
+          const file = installForPlatform(p, targetDir, isGlobal);
+          installed.push({ platform: p, file });
+        } catch (error) {
+          console.error(`  ✗ ${PLATFORMS[p].name}: ${error.message}`);
+        }
+      }
 
-    console.log(`
+      console.log(`
 Installation complete!
 
-The AEM Workflow Development skill is now available in Claude Code.
-Scope: ${scope} (${targetDir})
+The AEM Workflow Development skill is now available for:`);
+      for (const { platform: p } of installed) {
+        console.log(`  • ${PLATFORMS[p].name}`);
+      }
 
-Usage:
-  Just ask Claude about AEM workflow development, for example:
-  - "How do I create a custom workflow process step in AEM Cloud Service?"
-  - "Show me how to implement a post-processing workflow for assets"
-  - "What's the correct way to programmatically start a workflow?"
-
-The skill will automatically activate for AEM workflow-related queries.
+      console.log(`
+Usage Examples:
+  "How do I create a custom workflow process step in AEM Cloud Service?"
+  "Show me how to implement a post-processing workflow for assets"
+  "What's the correct way to programmatically start a workflow?"
 
 Documentation: https://github.com/narendragandhi/aem-workflow-skill
 `);
+    }
   } catch (error) {
-    console.error(`Error installing skill: ${error.message}`);
+    console.error(`Error: ${error.message}`);
     process.exit(1);
   }
 }
