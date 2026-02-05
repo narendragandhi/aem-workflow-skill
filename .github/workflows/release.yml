@@ -5,24 +5,23 @@ on:
     tags:
       - 'v*'
 
-permissions:
-  contents: read
-  releases: write
-
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      releases: write
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
     - name: Create Release
-      uses: softprops/action-gh-release@v2
+      uses: ncipollo/release-action@v1
       with:
-        files: ./releases/aem-workflow-development.skill
-        body_path: CHANGELOG.md
+        artifacts: "./releases/aem-workflow-development.skill"
+        artifactContentType: "application/zip"
+        bodyFilePath: "CHANGELOG.md"
         draft: false
         prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
