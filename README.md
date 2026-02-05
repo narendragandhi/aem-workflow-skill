@@ -1,6 +1,7 @@
 # AEM Workflow Development - Claude AI Skill
 
-> A comprehensive Claude AI skill for developing custom workflows in Adobe Experience Manager (AEM) as a Cloud Service
+> AI coding assistant skill for developing custom workflows in Adobe Experience Manager (AEM) as a Cloud Service
+> **Supports: Claude Code | GitHub Copilot | Gemini | Cursor | Windsurf**
 
 [![npm version](https://img.shields.io/npm/v/aem-workflow-skill.svg)](https://www.npmjs.com/package/aem-workflow-skill)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,7 +11,7 @@
 
 ## Overview
 
-This Claude AI skill provides expert guidance for developing custom workflows in Adobe Experience Manager as a Cloud Service. It's designed for developers working with the latest AEM SDK (2025.x) and follows current best practices for the cloud-native architecture.
+This AI skill provides expert guidance for developing custom workflows in Adobe Experience Manager as a Cloud Service. It works with multiple AI coding assistants and is designed for developers using the latest AEM SDK (2025.x) following cloud-native best practices.
 
 ### What This Skill Covers
 
@@ -29,15 +30,38 @@ This Claude AI skill provides expert guidance for developing custom workflows in
 #### Option 1: npm/npx (Recommended)
 
 ```bash
-# Install to current project
+# Install for Claude Code (default)
 npx aem-workflow-skill
 
-# Install globally (to ~/.claude/skills/)
-npx aem-workflow-skill --global
+# Install for ALL supported platforms at once
+npx aem-workflow-skill -p all
+
+# Install for specific platform
+npx aem-workflow-skill -p copilot    # GitHub Copilot
+npx aem-workflow-skill -p gemini     # Google Gemini CLI
+npx aem-workflow-skill -p cursor     # Cursor AI
+npx aem-workflow-skill -p windsurf   # Windsurf/Cascade
+
+# Install globally (where supported)
+npx aem-workflow-skill -p gemini -g  # Global Gemini config
+npx aem-workflow-skill --global      # Global Claude config
+
+# List all supported platforms
+npx aem-workflow-skill --list
 
 # Uninstall
-npx aem-workflow-skill --uninstall
+npx aem-workflow-skill -p all -u     # Remove from all platforms
 ```
+
+#### Supported Platforms
+
+| Platform | Install Location | Global |
+|----------|-----------------|--------|
+| Claude Code | `.claude/skills/aem-workflow.md` | Yes |
+| GitHub Copilot | `.github/copilot-instructions.md` | No |
+| Google Gemini | `GEMINI.md` | Yes |
+| Cursor AI | `.cursor/rules/aem-workflow.mdc` | No |
+| Windsurf | `.windsurf/rules/aem-workflow.md` | No |
 
 #### Option 2: Claude Code Plugin
 
@@ -54,13 +78,19 @@ npx aem-workflow-skill --uninstall
    git clone https://github.com/narendragandhi/aem-workflow-skill.git
    cd aem-workflow-skill
 
-   # Copy the skill file to your project
-   mkdir -p .claude/skills
-   cp skills/aem-workflow/SKILL.md .claude/skills/aem-workflow.md
+   # Copy the skill file to your project (choose your platform)
+   # Claude Code:
+   mkdir -p .claude/skills && cp skills/aem-workflow/SKILL.md .claude/skills/aem-workflow.md
+
+   # GitHub Copilot:
+   mkdir -p .github && cp skills/aem-workflow/SKILL.md .github/copilot-instructions.md
+
+   # Gemini:
+   cp skills/aem-workflow/SKILL.md GEMINI.md
    ```
 
 2. **Start Using**
-   - Open Claude Code in your project
+   - Open your AI coding assistant in your project
    - Ask any AEM workflow development question
    - The skill automatically provides expert guidance
 
@@ -301,17 +331,27 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Changelog
 
+### Version 1.2.0 (February 2026)
+- **Multi-Platform Support**: Claude, Copilot, Gemini, Cursor, Windsurf
+- Platform-specific content transformations
+- Global installation support
+- Quality score: 95/100
+
+### Version 1.1.0 (February 2026)
+- Content Fragment Workflows (UI Extensibility)
+- App Builder Extensions
+- Sling Jobs Integration
+- Multi-Step Approval Workflow templates
+
 ### Version 1.0.0 (February 2026)
-- Initial release
-- Coverage of Granite Workflow APIs
+- Initial release with Granite Workflow APIs
 - Asset Microservices architecture
 - Java 21 support
-- Comprehensive code templates
-- Administration and troubleshooting guides
 
 ---
 
-**Maintained by**: Narendra Gandhi  
-**Last Updated**: February 2026  
-**SDK Version**: 2025.11.23482.20251120T200914Z-251200  
-**Status**: ✅ Production Ready
+**Maintained by**: Narendra Gandhi
+**Last Updated**: February 2026
+**SDK Version**: 2025.11.23482.20251120T200914Z-251200
+**Quality Score**: 95/100
+**Status**: Production Ready

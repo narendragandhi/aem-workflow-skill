@@ -1,7 +1,7 @@
 {
   "name": "aem-workflow-skill",
-  "version": "1.1.6",
-  "description": "Claude AI skill for AEM workflow development in Adobe Experience Manager as a Cloud Service",
+  "version": "1.2.0",
+  "description": "AI coding assistant skill for AEM workflow development - supports Claude Code, GitHub Copilot, Gemini, Cursor, and Windsurf",
   "keywords": [
     "adobe-experience-manager",
     "aem",
@@ -10,7 +10,11 @@
     "workflow",
     "aem-cloud-service",
     "java",
-    "claude-code"
+    "claude-code",
+    "github-copilot",
+    "gemini",
+    "cursor",
+    "windsurf"
   ],
   "author": "narendragandhi",
   "license": "MIT",

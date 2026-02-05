@@ -2,35 +2,62 @@
 
 This document outlines planned enhancements for future releases of the AEM Workflow Development skill.
 
-## Version 1.1.0 (Next Release)
+## Version 1.1.0 (Released February 2026)
 
-### High Priority Enhancements
+### Completed Features
 
-#### 1. Multi-Step Approval Workflow
-**Status**: Planned
-**Effort**: Medium
-**Files**: `docs/scripts/MultiStepApprovalWorkflow.java`, SKILL.md section
+#### 1. Multi-Step Approval Workflow ✅
+**Status**: Completed
+**Files**: 4 Java templates in `examples/`
 
-Complete end-to-end example demonstrating:
+Delivered end-to-end approval workflow:
 - Sequential approval stages (Draft → Review → Legal → Final Approval)
 - Rejection handling with return-to-author flow
 - Escalation after timeout
 - Approval history tracking
 - Dynamic stage assignment based on content type
 
-```
-Workflow Flow:
-┌─────────┐    ┌──────────┐    ┌─────────┐    ┌──────────┐
-│  Draft  │───▶│  Review  │───▶│  Legal  │───▶│ Approved │
-└─────────┘    └──────────┘    └─────────┘    └──────────┘
-                    │               │
-                    ▼               ▼
-               ┌──────────────────────┐
-               │   Rejected (Author)  │
-               └──────────────────────┘
-```
+Components: HierarchicalApprovalChooser, ApprovalDecisionRecorder, EscalationCheckProcess, ApprovalCompletionNotifier
 
-#### 2. Email Notification Template
+#### 2. Content Fragment Workflows ✅
+**Status**: Completed
+Documentation for CF workflows via UI Extensibility and App Builder
+
+#### 3. Sling Jobs Integration ✅
+**Status**: Completed
+Pattern for long-running processes with Job Consumer
+
+#### 4. Hierarchical Participant Chooser ✅
+**Status**: Completed
+**Files**: `examples/HierarchicalApprovalChooser.java`
+
+Advanced participant selection patterns with manager chain lookup and escalation
+
+---
+
+## Version 1.2.0 (Released February 2026)
+
+### Completed Features
+
+#### 5. Multi-Platform Support ✅
+**Status**: Completed
+
+Skill can now be installed for multiple AI coding assistants:
+- Claude Code (default)
+- GitHub Copilot
+- Google Gemini CLI
+- Cursor AI
+- Windsurf/Cascade
+
+CLI options: `--platform`, `--list`, `--global`, `--uninstall`
+
+---
+
+## Version 1.3.0 (Planned)
+
+### High Priority Enhancements
+
+#### 6. Email Notification Template
 **Status**: Planned
 **Effort**: Low
 **Files**: `docs/scripts/EmailNotificationTemplate.java`
@@ -42,7 +69,7 @@ Production-ready email notification process step:
 - Attachment support for workflow context
 - Internationalization support
 
-#### 3. AEM 6.x to Cloud Service Migration Guide
+#### 7. AEM 6.x to Cloud Service Migration Guide
 **Status**: Planned
 **Effort**: Medium
 **Files**: `docs/migration-guide.md`, SKILL.md section
@@ -63,7 +90,7 @@ Comprehensive migration documentation:
 | Replication agents | Sling Content Distribution |
 | Custom rendition workflows | Asset Compute workers |
 
-#### 4. External API Integration Template
+#### 8. External API Integration Template
 **Status**: Planned
 **Effort**: Medium
 **Files**: `docs/scripts/ExternalAPIIntegrationTemplate.java`
@@ -76,25 +103,7 @@ Template for integrating workflows with external systems:
 - Circuit breaker pattern for resilience
 - Error handling and fallback strategies
 
-#### 5. Hierarchical Participant Chooser
-**Status**: Planned
-**Effort**: Low
-**Files**: `docs/scripts/HierarchicalParticipantChooser.java`
-
-Advanced participant selection patterns:
-- Manager chain lookup
-- Escalation after timeout
-- Delegation rules
-- Out-of-office handling
-- Role-based assignment with fallbacks
-
----
-
-## Version 1.2.0
-
-### Medium Priority Enhancements
-
-#### 6. Performance Optimization Guide
+#### 9. Performance Optimization Guide
 **Status**: Planned
 **Effort**: Medium
 
@@ -106,7 +115,13 @@ Topics to cover:
 - Memory management in long-running processes
 - Query optimization for work item retrieval
 
-#### 7. Cloud Manager Integration Guide
+---
+
+## Version 1.4.0 (Future)
+
+### Medium Priority Enhancements
+
+#### 10. Cloud Manager Integration Guide
 **Status**: Planned
 **Effort**: Low
 
@@ -117,7 +132,7 @@ Documentation covering:
 - Workflow testing in RDE (Rapid Development Environment)
 - Production vs non-production workflow behavior
 
-#### 8. Advanced Error Recovery Patterns
+#### 11. Advanced Error Recovery Patterns
 **Status**: Planned
 **Effort**: Medium
 **Files**: `docs/scripts/ErrorRecoveryTemplate.java`
@@ -130,7 +145,7 @@ Patterns for robust error handling:
 - Error notification and alerting
 - Manual intervention hooks
 
-#### 9. AEM Mocks Testing Guide
+#### 12. AEM Mocks Testing Guide
 **Status**: Planned
 **Effort**: Medium
 
@@ -141,7 +156,7 @@ Complete testing setup documentation:
 - Test fixtures for common scenarios
 - CI/CD testing configuration
 
-#### 10. Workflow Monitoring & Reporting
+#### 13. Workflow Monitoring & Reporting
 **Status**: Planned
 **Effort**: Medium
 
@@ -154,18 +169,18 @@ Custom monitoring solutions:
 
 ---
 
-## Version 1.3.0+
+## Version 1.5.0+ (Future)
 
 ### Nice to Have Enhancements
 
-#### 11. Architecture Diagrams
+#### 14. Architecture Diagrams
 Visual documentation:
 - Asset Microservices flow diagram
 - Workflow lifecycle state diagram
 - Cloud Service architecture overview
 - Post-processing workflow sequence diagram
 
-#### 12. Anti-Patterns Guide
+#### 15. Anti-Patterns Guide
 Common mistakes to avoid:
 - Long-running synchronous processes
 - Improper resource resolver handling
@@ -173,21 +188,14 @@ Common mistakes to avoid:
 - Hardcoded paths and values
 - Ignoring Cloud Service constraints
 
-#### 13. Content Fragment Workflows
-CF-specific patterns:
-- Content Fragment processing
-- CF model validation workflows
-- Translation workflows for CFs
-- CF publishing workflows
-
-#### 14. Workflow Versioning Guide
+#### 16. Workflow Versioning Guide
 Model management:
 - Workflow model versioning strategies
 - Backward compatibility approaches
 - In-flight instance handling during upgrades
 - A/B testing workflows
 
-#### 15. Internationalization in Workflows
+#### 17. Internationalization in Workflows
 i18n patterns:
 - Localized email notifications
 - Multi-language participant instructions
@@ -196,23 +204,28 @@ i18n patterns:
 
 ---
 
-## New Templates Summary
+## Completed Templates Summary
 
-### v1.1.0 Templates
+### v1.0.0 Templates (Initial Release)
 ```
 docs/scripts/
-├── MultiStepApprovalWorkflow.java      # Complete approval workflow
-├── EmailNotificationTemplate.java       # Email notifications
-├── ExternalAPIIntegrationTemplate.java  # REST API integration
-└── HierarchicalParticipantChooser.java  # Advanced participant selection
+├── BasicWorkflowProcessTemplate.java      # Foundation workflow process
+├── DamAssetWorkflowProcessTemplate.java   # Asset processing
+└── WorkflowStarterTemplate.java           # Programmatic workflow start
 ```
 
-### v1.2.0 Templates
+### v1.1.0 Templates (Approval Workflows)
 ```
-docs/scripts/
-├── BatchProcessingTemplate.java         # Bulk content processing
-└── ErrorRecoveryTemplate.java           # Robust error handling
+examples/
+├── HierarchicalApprovalChooser.java       # Dynamic participant selection
+├── ApprovalDecisionRecorder.java          # Decision tracking
+├── EscalationCheckProcess.java            # Timeout escalation
+├── ApprovalCompletionNotifier.java        # Completion notifications
+└── CustomMetadataExtractorWorkflow.java   # Metadata extraction
 ```
+
+### v1.2.0 (Multi-Platform Support)
+No new templates - focused on installer and platform support
 
 ---
 
