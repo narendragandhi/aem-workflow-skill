@@ -180,7 +180,7 @@ Reviews typically take 2-5 business days.
 
 - **Questions**: Open an issue with the "question" label
 - **Discussions**: Use GitHub Discussions
-- **Security Issues**: Email [security contact] directly
+- **Security Issues**: Report via [GitHub Security Advisories](../../security/advisories/new)
 
 ## Recognition
 

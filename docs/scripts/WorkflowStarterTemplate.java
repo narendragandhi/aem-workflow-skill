@@ -24,7 +24,7 @@ import java.util.Map;
  * - Servlets
  * - Custom services
  */
-@Component(service = WorkflowStarter.class)
+@Component(service = WorkflowStarterTemplate.class)
 public class WorkflowStarterTemplate {
     
     private static final Logger LOG = LoggerFactory.getLogger(WorkflowStarterTemplate.class);

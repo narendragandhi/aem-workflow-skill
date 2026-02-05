@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-02-04
+
+### Added
+- **Content Fragment Workflows**: Complete guide for integrating workflows with CF Editor using UI Extensibility and App Builder
+- **App Builder Extensions**: Documentation for custom workflow UI, inbox extensions, and external dashboards
+- **Sling Jobs Integration**: Pattern for long-running processes with Job Consumer and async workflow dispatch
+- **Multi-Step Approval Workflow**: Complete example with hierarchical participant chooser, escalation, and decision tracking
+- **New Template**: `MultiStepApprovalWorkflow.java` with 4 reusable components (HierarchicalApprovalChooser, ApprovalDecisionRecorder, EscalationCheckProcess, ApprovalCompletionNotifier)
+
+### Documentation
+- Added 500+ lines of new content covering modern AEM Cloud Service patterns
+- Expanded Advanced Topics section with production-ready examples
+- Added OSGi configuration examples for Sling Jobs
+
+---
+
+## [1.0.1] - 2026-02-04
+
+### Fixed
+- **WorkflowStarterTemplate.java**: Fixed `@Component` service class reference (was `WorkflowStarter.class`, now correctly `WorkflowStarterTemplate.class`)
+- **CustomMetadataExtractorWorkflow.java**: Fixed method name typo (`categorizeSizeSize()` → `categorizeFileSize()`)
+
+### Added
+- Documentation: Added note about "DAM Update Asset Workflow Completed" step requirement for post-processing workflows
+- Quality report and roadmap documentation
+
+---
+
 ## [1.0.0] - 2026-02-03
 
 ### Added
@@ -76,4 +104,4 @@ This project uses [Semantic Versioning](https://semver.org/):
 
 ---
 
-For older versions, see [GitHub Releases](https://github.com/YOUR-USERNAME/aem-workflow-skill/releases)
+For older versions, see [GitHub Releases](https://github.com/narendragandhi/aem-workflow-skill/releases)

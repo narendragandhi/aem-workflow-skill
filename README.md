@@ -311,7 +311,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Maintained by**: Your Team Name  
+**Maintained by**: Narendra Gandhi  
 **Last Updated**: February 2026  
 **SDK Version**: 2025.11.23482.20251120T200914Z-251200  
 **Status**: ✅ Production Ready

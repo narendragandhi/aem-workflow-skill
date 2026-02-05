@@ -115,7 +115,7 @@ public class CustomMetadataExtractorWorkflow implements WorkflowProcess {
             
             // Example 2: Categorize by file size
             long fileSize = asset.getOriginal().getSize();
-            String sizeCategory = categorizeSizeSize(fileSize);
+            String sizeCategory = categorizeFileSize(fileSize);
             metadata.put(PROP_FILE_SIZE_CATEGORY, sizeCategory);
             
             // Example 3: Store processing status

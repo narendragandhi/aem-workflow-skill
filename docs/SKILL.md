@@ -576,6 +576,8 @@ Use **post-processing workflows** that run AFTER Asset Microservices complete:
    - Add your custom workflow in the "Post-processing Workflow" section
    - Apply the profile to specific DAM folders
 
+   **IMPORTANT**: Post-processing workflows MUST end with the **"DAM Update Asset Workflow Completed"** process step. This step signals to Asset Microservices that custom processing is complete. Without this step, the asset may appear stuck in "processing" state.
+
 2. **Create Custom Post-Processing Workflow Step:**
 ```java
 @Component(
@@ -892,6 +894,517 @@ public void execute(WorkItem workItem, WorkflowSession wfSession, MetaDataMap ar
 private void processResource(Resource resource) {
     // Process individual resource
     LOG.info("Processing resource: {}", resource.getPath());
+}
+```
+
+## Content Fragment Workflows with UI Extensibility
+
+AEM as a Cloud Service introduces **UI Extensibility** for integrating workflows with the Content Fragment Editor. This modern approach uses App Builder extensions instead of traditional AEM overlays.
+
+### Overview
+
+Content Fragment workflows allow authors to:
+- Trigger approval workflows from the CF Editor
+- Submit content for review without leaving the editor
+- Track workflow status inline
+
+### App Builder Extension Setup
+
+**1. Create Extension Project:**
+
+```bash
+aio app init my-cf-workflow-extension --template @adobe/aem-cf-editor-ui-ext-tpl
+```
+
+**2. Register Action Bar Button:**
+
+```javascript
+// src/aem-cf-editor-1/web-src/src/components/ExtensionRegistration.js
+import { register } from "@adobe/uix-guest";
+
+function ExtensionRegistration() {
+  const init = async () => {
+    const guestConnection = await register({
+      id: "cf-workflow-extension",
+      methods: {
+        actionBar: {
+          getButtons() {
+            return [
+              {
+                id: "start-approval-workflow",
+                label: "Submit for Approval",
+                icon: "Workflow",
+                onClick: async () => {
+                  const contentFragment = await guestConnection.host.contentFragment.getContentFragment();
+                  // Trigger workflow via AEM API
+                  await startWorkflow(contentFragment.path);
+                }
+              }
+            ];
+          }
+        }
+      }
+    });
+  };
+
+  init().catch(console.error);
+  return <></>;
+}
+```
+
+**3. Backend Action to Start Workflow:**
+
+```javascript
+// src/aem-cf-editor-1/actions/start-workflow/index.js
+const { Core } = require("@adobe/aio-sdk");
+const { getAEMAccessToken } = require("../utils");
+
+async function main(params) {
+  const { contentFragmentPath, workflowModel } = params;
+
+  const accessToken = await getAEMAccessToken(params);
+  const aemHost = params.aemHost;
+
+  // Start workflow via AEM REST API
+  const response = await fetch(`${aemHost}/etc/workflow/instances`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams({
+      model: workflowModel || "/var/workflow/models/request_for_activation",
+      payloadType: "JCR_PATH",
+      payload: contentFragmentPath
+    })
+  });
+
+  return {
+    statusCode: response.ok ? 200 : response.status,
+    body: await response.json()
+  };
+}
+
+exports.main = main;
+```
+
+### Extension Configuration
+
+**app.config.yaml:**
+
+```yaml
+extensions:
+  aem/cf-editor/1:
+    $include: src/aem-cf-editor-1/ext.config.yaml
+    operations:
+      view:
+        - type: actionBar
+          impl: ExtensionRegistration
+```
+
+### Deployment
+
+```bash
+# Deploy to Stage
+aio app deploy
+
+# Deploy to Production
+aio app deploy --target production
+```
+
+## App Builder Extensions for Workflow UI
+
+Beyond Content Fragments, App Builder enables custom workflow UI across AEM:
+
+### Custom Inbox Extensions
+
+Create custom views and actions in the AEM Inbox:
+
+```javascript
+// Custom inbox action
+const inboxExtension = {
+  id: "custom-bulk-approve",
+  label: "Bulk Approve",
+  icon: "CheckmarkCircle",
+  onClick: async (selectedItems) => {
+    for (const item of selectedItems) {
+      await completeWorkItem(item.workItemId, "approve");
+    }
+  }
+};
+```
+
+### External Workflow Dashboard
+
+Build standalone dashboards that integrate with AEM workflows:
+
+```javascript
+// Fetch workflow instances
+async function getWorkflowInstances(status = "RUNNING") {
+  const response = await fetch(
+    `${aemHost}/libs/cq/workflow/content/console/content/instances.json?status=${status}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  return response.json();
+}
+
+// Display in React component
+function WorkflowDashboard() {
+  const [instances, setInstances] = useState([]);
+
+  useEffect(() => {
+    getWorkflowInstances().then(setInstances);
+  }, []);
+
+  return (
+    <Table>
+      {instances.map(wf => (
+        <Row key={wf.id}>
+          <Cell>{wf.payload}</Cell>
+          <Cell>{wf.state}</Cell>
+          <Cell>{wf.currentAssignee}</Cell>
+        </Row>
+      ))}
+    </Table>
+  );
+}
+```
+
+## Sling Jobs for Long-Running Processes
+
+For operations that exceed workflow step timeouts or require guaranteed execution, use **Sling Jobs** instead of inline workflow processing.
+
+### Why Use Sling Jobs?
+
+- **Persistence**: Jobs survive container restarts
+- **Retry Logic**: Built-in retry with configurable backoff
+- **Scalability**: Distributed processing across cluster
+- **Monitoring**: Job status tracking and reporting
+
+### Creating a Job Consumer
+
+```java
+package com.example.core.jobs;
+
+import org.apache.sling.event.jobs.Job;
+import org.apache.sling.event.jobs.consumer.JobConsumer;
+import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@Component(
+    service = JobConsumer.class,
+    property = {
+        JobConsumer.PROPERTY_TOPICS + "=com/example/workflow/longrunning"
+    }
+)
+public class LongRunningJobConsumer implements JobConsumer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(LongRunningJobConsumer.class);
+
+    @Override
+    public JobResult process(Job job) {
+        String assetPath = job.getProperty("assetPath", String.class);
+        String workflowId = job.getProperty("workflowId", String.class);
+
+        LOG.info("Processing long-running job for: {}", assetPath);
+
+        try {
+            // Perform time-intensive operations
+            performHeavyProcessing(assetPath);
+
+            // Optionally: Signal workflow to continue
+            if (workflowId != null) {
+                signalWorkflowCompletion(workflowId);
+            }
+
+            return JobResult.OK;
+
+        } catch (Exception e) {
+            LOG.error("Job processing failed", e);
+            // Return FAILED to trigger retry based on job configuration
+            return JobResult.FAILED;
+        }
+    }
+
+    private void performHeavyProcessing(String path) {
+        // Video transcoding, large file processing, external API calls, etc.
+    }
+
+    private void signalWorkflowCompletion(String workflowId) {
+        // Update workflow metadata or advance to next step
+    }
+}
+```
+
+### Workflow Step that Creates Jobs
+
+```java
+package com.example.core.workflows;
+
+import com.adobe.granite.workflow.WorkflowException;
+import com.adobe.granite.workflow.WorkflowSession;
+import com.adobe.granite.workflow.exec.WorkItem;
+import com.adobe.granite.workflow.exec.WorkflowProcess;
+import com.adobe.granite.workflow.metadata.MetaDataMap;
+import org.apache.sling.event.jobs.JobManager;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Component(
+    service = WorkflowProcess.class,
+    property = {
+        "process.label=Async Job Dispatcher"
+    }
+)
+public class AsyncJobDispatcherProcess implements WorkflowProcess {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncJobDispatcherProcess.class);
+    private static final String JOB_TOPIC = "com/example/workflow/longrunning";
+
+    @Reference
+    private JobManager jobManager;
+
+    @Override
+    public void execute(WorkItem workItem, WorkflowSession workflowSession, MetaDataMap metaDataMap)
+            throws WorkflowException {
+
+        String payload = workItem.getWorkflowData().getPayload().toString();
+        String workflowId = workItem.getWorkflow().getId();
+
+        // Create job properties
+        Map<String, Object> jobProps = new HashMap<>();
+        jobProps.put("assetPath", payload);
+        jobProps.put("workflowId", workflowId);
+        jobProps.put("initiator", workItem.getWorkflow().getInitiator());
+
+        // Add job to queue
+        org.apache.sling.event.jobs.Job job = jobManager.addJob(JOB_TOPIC, jobProps);
+
+        if (job != null) {
+            LOG.info("Created async job {} for workflow {}", job.getId(), workflowId);
+
+            // Store job ID in workflow metadata for tracking
+            workItem.getWorkflow().getMetaDataMap().put("asyncJobId", job.getId());
+        } else {
+            throw new WorkflowException("Failed to create async job");
+        }
+    }
+}
+```
+
+### Job Configuration (OSGi)
+
+```
+PID: org.apache.sling.event.jobs.QueueConfiguration~longrunning
+
+queue.name = "Long Running Workflow Jobs"
+queue.topics = ["com/example/workflow/longrunning"]
+queue.type = "ORDERED"
+queue.maxparallel = 3
+queue.retries = 5
+queue.retrydelay = 60000
+queue.priority = "NORM"
+```
+
+## Multi-Step Approval Workflow Pattern
+
+Complex approval workflows with multiple stages, escalation, and conditional routing.
+
+### Workflow Model Structure
+
+```
+[Start] → [Initial Review] → [Department Approval] → [Final Approval] → [Publish] → [End]
+                ↓                     ↓                      ↓
+            [Reject]              [Reject]              [Reject]
+                ↓                     ↓                      ↓
+            [Notify Author] ← ← ← ← ←
+```
+
+### Hierarchical Participant Chooser
+
+```java
+package com.example.core.workflows;
+
+import com.adobe.granite.workflow.WorkflowException;
+import com.adobe.granite.workflow.WorkflowSession;
+import com.adobe.granite.workflow.exec.ParticipantStepChooser;
+import com.adobe.granite.workflow.exec.WorkItem;
+import com.adobe.granite.workflow.metadata.MetaDataMap;
+import org.apache.jackrabbit.api.security.user.Authorizable;
+import org.apache.jackrabbit.api.security.user.Group;
+import org.apache.jackrabbit.api.security.user.UserManager;
+import org.apache.sling.api.resource.ResourceResolver;
+import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.jcr.RepositoryException;
+import java.util.Iterator;
+
+@Component(
+    service = ParticipantStepChooser.class,
+    property = {
+        "chooser.label=Hierarchical Approval Chooser"
+    }
+)
+public class HierarchicalApprovalChooser implements ParticipantStepChooser {
+
+    private static final Logger LOG = LoggerFactory.getLogger(HierarchicalApprovalChooser.class);
+
+    @Override
+    public String getParticipant(WorkItem workItem, WorkflowSession workflowSession,
+                                 MetaDataMap metaDataMap) throws WorkflowException {
+
+        try {
+            ResourceResolver resolver = workflowSession.adaptTo(ResourceResolver.class);
+            UserManager userManager = resolver.adaptTo(UserManager.class);
+
+            // Get current approval level from workflow metadata
+            MetaDataMap wfMetadata = workItem.getWorkflow().getMetaDataMap();
+            int approvalLevel = wfMetadata.get("approvalLevel", 1);
+
+            // Get content path for department routing
+            String payloadPath = workItem.getWorkflowData().getPayload().toString();
+            String department = extractDepartment(payloadPath);
+
+            // Determine approver based on level and department
+            String approverGroup = getApproverGroup(approvalLevel, department);
+
+            // Increment approval level for next step
+            wfMetadata.put("approvalLevel", approvalLevel + 1);
+
+            LOG.info("Routing to {} for level {} approval", approverGroup, approvalLevel);
+            return approverGroup;
+
+        } catch (Exception e) {
+            LOG.error("Failed to determine approver", e);
+            return "administrators"; // Fallback
+        }
+    }
+
+    private String extractDepartment(String path) {
+        // Extract department from content path
+        // e.g., /content/mysite/marketing/page → marketing
+        String[] segments = path.split("/");
+        if (segments.length > 3) {
+            return segments[3];
+        }
+        return "default";
+    }
+
+    private String getApproverGroup(int level, String department) {
+        switch (level) {
+            case 1:
+                return department + "-reviewers";      // marketing-reviewers
+            case 2:
+                return department + "-managers";       // marketing-managers
+            case 3:
+                return "content-governance";           // Final approval
+            default:
+                return "administrators";
+        }
+    }
+}
+```
+
+### Escalation Handler
+
+```java
+package com.example.core.workflows;
+
+import com.adobe.granite.workflow.WorkflowException;
+import com.adobe.granite.workflow.WorkflowSession;
+import com.adobe.granite.workflow.exec.WorkItem;
+import com.adobe.granite.workflow.exec.WorkflowProcess;
+import com.adobe.granite.workflow.metadata.MetaDataMap;
+import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
+@Component(
+    service = WorkflowProcess.class,
+    property = {
+        "process.label=Escalation Check Process"
+    }
+)
+public class EscalationCheckProcess implements WorkflowProcess {
+
+    private static final Logger LOG = LoggerFactory.getLogger(EscalationCheckProcess.class);
+    private static final long ESCALATION_THRESHOLD_HOURS = 48;
+
+    @Override
+    public void execute(WorkItem workItem, WorkflowSession workflowSession, MetaDataMap metaDataMap)
+            throws WorkflowException {
+
+        MetaDataMap wfMetadata = workItem.getWorkflow().getMetaDataMap();
+
+        // Get step start time
+        Date stepStartTime = wfMetadata.get("currentStepStartTime", Date.class);
+        if (stepStartTime == null) {
+            stepStartTime = new Date();
+            wfMetadata.put("currentStepStartTime", stepStartTime);
+            return;
+        }
+
+        // Check if escalation needed
+        long hoursElapsed = TimeUnit.MILLISECONDS.toHours(
+            System.currentTimeMillis() - stepStartTime.getTime()
+        );
+
+        if (hoursElapsed >= ESCALATION_THRESHOLD_HOURS) {
+            LOG.warn("Workflow {} exceeded {} hour threshold, escalating",
+                workItem.getWorkflow().getId(), ESCALATION_THRESHOLD_HOURS);
+
+            // Mark for escalation - workflow model routes based on this
+            wfMetadata.put("escalated", true);
+            wfMetadata.put("escalationReason", "Approval timeout exceeded " + ESCALATION_THRESHOLD_HOURS + " hours");
+
+            // Send escalation notification
+            sendEscalationNotification(workItem);
+        }
+    }
+
+    private void sendEscalationNotification(WorkItem workItem) {
+        // Implement email/notification logic
+        LOG.info("Sending escalation notification for workflow: {}",
+            workItem.getWorkflow().getId());
+    }
+}
+```
+
+### Approval Status Tracking
+
+```java
+// Track approval history in workflow metadata
+private void recordApprovalDecision(WorkItem workItem, String approver,
+                                     String decision, String comments) {
+    MetaDataMap metadata = workItem.getWorkflow().getMetaDataMap();
+
+    // Build approval history
+    String historyKey = "approvalHistory";
+    String existingHistory = metadata.get(historyKey, "");
+
+    String newEntry = String.format("[%s] %s: %s by %s - %s",
+        new Date(),
+        workItem.getNode().getTitle(),
+        decision,
+        approver,
+        comments
+    );
+
+    metadata.put(historyKey, existingHistory + "\n" + newEntry);
+    metadata.put("lastApprover", approver);
+    metadata.put("lastDecision", decision);
+    metadata.put("lastDecisionTime", new Date());
 }
 ```
 

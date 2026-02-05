@@ -1,6 +1,6 @@
 {
   "name": "aem-workflow-skill",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Claude AI skill for AEM workflow development in Adobe Experience Manager as a Cloud Service",
   "keywords": [
     "adobe-experience-manager",
@@ -23,7 +23,7 @@
     "url": "https://github.com/narendragandhi/aem-workflow-skill/issues"
   },
   "bin": {
-    "aem-workflow-skill": "./bin/install.js"
+    "aem-workflow-skill": "bin/install.js"
   },
   "files": [
     "bin/",
