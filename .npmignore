@@ -1,0 +1,33 @@
+# Git and CI/CD
+.git
+.github
+.gitignore
+.gitattributes
+
+# CI/CD and build artifacts
+*.tar.gz
+*.zip
+!releases/*.skill
+
+# Documentation (not needed in npm package)
+QUICKSTART.md
+CONTRIBUTING.md
+GITHUB_SETUP.md
+ROADMAP.md
+QUALITY_REPORT.md
+CHANGELOG.md
+CONTRIBUTORS.md
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and temp
+*.log
+npm-debug.log*

@@ -672,6 +672,154 @@ public class CustomParticipantChooser implements ParticipantStepChooser {
 }
 ```
 
+### ECMA Scripts in Workflows
+
+ECMA (JavaScript) scripts can be used in various workflow steps to add dynamic logic. These scripts are stored in the JCR and have access to several workflow-related Java objects.
+
+**Available Variables:**
+- `graniteWorkItem`: The current work item.
+- `workflowData`: The workflow data.
+- `workflowSession`: The workflow session.
+- `args`: An array of arguments passed to the step.
+- `log`: A logger object.
+
+**Use Cases:**
+- **Process Step:** Perform operations on the payload or metadata.
+- **Participant Step:** Dynamically select the participant.
+- **OR Split:** Define routing logic.
+
+**Example: Process Step Script**
+
+```javascript
+// Access the workflow payload and set a property
+var workflowData = graniteWorkItem.getWorkflowData();
+if (workflowData.getPayloadType() == "JCR_PATH") {
+    var path = workflowData.getPayload().toString();
+    var node = workflowSession.getSession().getItem(path);
+    node.setProperty("approved", true);
+    node.save();
+}
+```
+
+### Decision Steps (OR Split)
+
+The "OR Split" step allows you to create conditional branches in your workflow. Each branch has a routing expression that determines if that branch should be followed.
+
+**Creating an OR Split:**
+
+1.  **Add the OR Split Step:** Add the "OR Split" step to your workflow model.
+2.  **Create the Branches:** Add the workflow steps for each branch.
+3.  **Configure the Routing:** For each branch, edit the properties and go to the "Common" tab. In the "Condition" field, you can add a rule. A common approach is to use an ECMA script.
+
+**Example: ECMA Script for Routing**
+
+This script checks the value of a "decision" metadata property and returns `true` if it's "approve".
+
+```javascript
+function check() {
+    var decision = workflowData.getMetaDataMap().get("decision", "String");
+    if (decision == "approve") {
+        return true;
+    }
+    return false;
+}
+```
+
+You would have another branch with a similar script that returns `true` if `decision == "reject"`.
+
+### Custom Dialogs for Participant Steps
+
+For participant steps that require user input beyond simple approval, you can create custom dialogs. These dialogs are built using Granite UI components, similar to authoring dialogs.
+
+**Use Cases:**
+- Capturing rejection reasons.
+- Assigning a task to a specific user from a dropdown.
+- Collecting metadata that needs to be reviewed before approval.
+
+**Creating a Custom Dialog:**
+
+1.  **Create the Dialog Node:** Create a `cq:Dialog` node in your project, for example, at `/apps/my-project/workflow/dialogs/my-dialog`.
+2.  **Define the Dialog Structure:** Use Granite UI components to build the dialog. The following is an example of a dialog with a comment field and a dropdown to approve or reject.
+
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+              xmlns:cq="http://www.day.com/jcr/cq/1.0"
+              xmlns:jcr="http://www.jcp.org/jcr/1.0"
+              xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+              jcr:primaryType="nt:unstructured"
+              jcr:title="Approval Dialog"
+              sling:resourceType="cq/gui/components/authoring/dialog">
+        <content
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="granite/ui/components/coral/foundation/fixedcolumns">
+            <items jcr:primaryType="nt:unstructured">
+                <column
+                    jcr:primaryType="nt:unstructured"
+                    sling:resourceType="granite/ui/components/coral/foundation/container">
+                    <items jcr:primaryType="nt:unstructured">
+                        <comment
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textarea"
+                            fieldLabel="Comment"
+                            name="comment"/>
+                        <decision
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/select"
+                            fieldLabel="Decision"
+                            name="decision">
+                            <items jcr:primaryType="nt:unstructured">
+                                <approve
+                                    jcr:primaryType="nt:unstructured"
+                                    text="Approve"
+                                    value="approve"/>
+                                <reject
+                                    jcr:primaryType="nt:unstructured"
+                                    text="Reject"
+                                    value="reject"/>
+                            </items>
+                        </decision>
+                    </items>
+                </column>
+            </items>
+        </content>
+    </jcr:root>
+    ```
+3.  **Configure the Participant Step:** In your workflow model, select the "Dialog Participant Step" and set the "Dialog Path" property to the path of your dialog node (e.g., `/apps/my-project/workflow/dialogs/my-dialog/cq:dialog`).
+
+**Accessing Dialog Data in the Workflow:**
+
+The data entered in the dialog is stored in the workflow's metadata. You can access it in a subsequent workflow step.
+
+```java
+@Component(
+    service = WorkflowProcess.class,
+    property = {
+        "process.label=Process Approval Step"
+    }
+)
+public class ProcessApprovalStep implements WorkflowProcess {
+    
+    @Override
+    public void execute(WorkItem workItem, WorkflowSession workflowSession, MetaDataMap metaDataMap) 
+            throws WorkflowException {
+        
+        // Get the workflow metadata
+        MetaDataMap workflowMetadata = workItem.getWorkflow().getMetaDataMap();
+        
+        // Get the data from the dialog
+        String comment = workflowMetadata.get("comment", String.class);
+        String decision = workflowMetadata.get("decision", String.class);
+        
+        if ("approve".equals(decision)) {
+            // Logic for approval
+        } else if ("reject".equals(decision)) {
+            // Logic for rejection, using the comment
+        }
+    }
+}
+```
+
 ### Workflow Inbox Integration
 
 Users interact with workflows through the AEM Inbox:
@@ -749,6 +897,8 @@ wfMetadata.put("stageStartTime", System.currentTimeMillis());
 - Use stages for reporting and dashboards
 
 ## Advanced Topics
+
+**Note:** The following sections describe features available in the popular open-source library ACS AEM Commons. These are powerful tools for advanced workflow scenarios, but they are not required to use this skill. This skill does not have a dependency on ACS AEM Commons.
 
 ### Asset Processing in Cloud Service
 
