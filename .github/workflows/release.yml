@@ -9,7 +9,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       releases: write
     
     steps:
@@ -24,4 +24,3 @@ jobs:
         bodyFilePath: "CHANGELOG.md"
         draft: false
         prerelease: false
-        token: ${{ secrets.GITHUB_TOKEN }}
