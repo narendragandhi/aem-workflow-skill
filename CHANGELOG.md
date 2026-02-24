@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-02-24
+
+### Added
+
+- **Automated Testing**: Comprehensive Jest test suite (unit + integration tests).
+- **Quality Assurance**: Integrated ESLint (v10) and Prettier for code consistency.
+- **CI/CD**: Added GitHub Actions pipeline for automated testing on every push.
+- **Integration Tests**: File system verification for all supported platforms.
+
+### Changed
+
+- **CLI Enhancement**: Refactored `bin/install.js` with ANSI color output and improved UI.
+- **Unified Documentation**: Consolidated installation guides into a single source of truth in `README.md`.
+- **Code Quality**: Refactored installer to be modular and testable.
+
+### Removed
+
+- Redundant `INSTALLATION.md` file.
+
 ## [1.2.0] - 2026-02-05
 
 ### Added
