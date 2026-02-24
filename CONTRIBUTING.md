@@ -104,11 +104,11 @@ When modifying the skill itself:
     }
 )
 public class MyWorkflowProcess implements WorkflowProcess {
-    
+
     private static final Logger LOG = LoggerFactory.getLogger(MyWorkflowProcess.class);
-    
+
     @Override
-    public void execute(WorkItem workItem, WorkflowSession workflowSession, 
+    public void execute(WorkItem workItem, WorkflowSession workflowSession,
                        MetaDataMap metaDataMap) throws WorkflowException {
         try {
             // Clear implementation
@@ -122,7 +122,7 @@ public class MyWorkflowProcess implements WorkflowProcess {
 
 ### Documentation
 
-```markdown
+````markdown
 ## Section Title
 
 Clear explanation of concept.
@@ -135,9 +135,11 @@ Clear explanation of concept.
 // Code example with comments
 WorkflowSession session = resolver.adaptTo(WorkflowSession.class);
 ```
+````
 
 **Best Practice**: Always do X because Y.
-```
+
+````
 
 ## Testing
 
@@ -146,15 +148,17 @@ Before submitting:
 1. **Compile all Java templates**
    ```bash
    javac -cp aem-sdk-api.jar YourTemplate.java
-   ```
+````
 
 2. **Validate Markdown**
+
    ```bash
    # Use markdownlint or similar
    markdownlint *.md
    ```
 
 3. **Package the skill**
+
    ```bash
    python3 package_skill.py aem-workflow-development
    ```
@@ -185,6 +189,7 @@ Reviews typically take 2-5 business days.
 ## Recognition
 
 Contributors will be:
+
 - Listed in CONTRIBUTORS.md
 - Mentioned in release notes
 - Credited in significant contributions

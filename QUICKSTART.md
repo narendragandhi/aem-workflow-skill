@@ -22,11 +22,13 @@ cd aem-workflow-skill-repo
 ## Step 2: Create GitHub Repository (1 minute)
 
 **Option A: GitHub CLI (Fastest)**
+
 ```bash
 gh repo create aem-workflow-skill --public --source=. --remote=origin --push
 ```
 
 **Option B: Web Interface**
+
 1. Go to https://github.com/new
 2. Name: `aem-workflow-skill`
 3. Public repository
@@ -54,6 +56,7 @@ git push origin v1.0.0
 ```
 
 Then on GitHub:
+
 1. Go to Releases → Draft new release
 2. Choose tag: v1.0.0
 3. Title: "AEM Workflow Development Skill v1.0.0"
@@ -74,6 +77,7 @@ Then on GitHub:
 ## Done! 🎉
 
 Your skill is now:
+
 - ✅ Hosted on GitHub
 - ✅ Ready for download
 - ✅ Properly documented
@@ -82,6 +86,7 @@ Your skill is now:
 ## Share With Your Team
 
 Send them:
+
 ```
 📦 AEM Workflow Development Skill for Claude AI
 
@@ -98,17 +103,20 @@ Start using: Ask Claude any AEM workflow question!
 ## Next Steps
 
 **Immediate:**
+
 - [ ] Update README.md with your GitHub username
 - [ ] Test skill download from releases
 - [ ] Share with team
 
 **Soon:**
+
 - [ ] Enable GitHub Discussions for Q&A
 - [ ] Add issue templates
 - [ ] Set up branch protection
 - [ ] Create CONTRIBUTORS.md
 
 **Later:**
+
 - [ ] Add more examples
 - [ ] Create video tutorial
 - [ ] Write blog post
@@ -145,6 +153,7 @@ aem-workflow-skill-repo/
 ## Troubleshooting
 
 **Can't push to GitHub?**
+
 ```bash
 # Make sure you're authenticated
 gh auth login
@@ -154,11 +163,13 @@ git config --global user.email "your@email.com"
 ```
 
 **Release not creating?**
+
 - Check .github/workflows/release.yml exists
 - Ensure tag starts with 'v' (v1.0.0)
 - Check Actions tab for errors
 
 **Skill file missing?**
+
 - Should be in releases/aem-workflow-development.skill
 - If missing, download from original outputs folder
 

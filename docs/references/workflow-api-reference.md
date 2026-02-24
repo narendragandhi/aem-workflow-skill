@@ -5,6 +5,7 @@ Comprehensive reference for Granite Workflow APIs in AEM as a Cloud Service.
 ## Package Structure
 
 ### Main Packages
+
 - `com.adobe.granite.workflow` - Core workflow API
 - `com.adobe.granite.workflow.exec` - Workflow execution interfaces
 - `com.adobe.granite.workflow.model` - Workflow model definitions
@@ -58,8 +59,9 @@ ResultSet<InboxItem> getActiveInboxItems(long start, long limit, InboxItemFilter
 ```
 
 **Common Workflow States:**
+
 - `RUNNING` - Workflow is active
-- `COMPLETED` - Workflow finished successfully  
+- `COMPLETED` - Workflow finished successfully
 - `ABORTED` - Workflow was terminated
 - `SUSPENDED` - Workflow is paused
 - `STALE` - Workflow is no longer valid
@@ -73,11 +75,12 @@ Interface to implement custom workflow process steps.
 **Required Method:**
 
 ```java
-void execute(WorkItem workItem, WorkflowSession workflowSession, MetaDataMap metaDataMap) 
+void execute(WorkItem workItem, WorkflowSession workflowSession, MetaDataMap metaDataMap)
     throws WorkflowException
 ```
 
 **Parameters:**
+
 - `workItem` - Represents the resource moving through the workflow
 - `workflowSession` - Session for workflow operations
 - `metaDataMap` - Process step arguments and configuration
@@ -175,6 +178,7 @@ MetaDataMap getMetaDataMap()
 ```
 
 **Common Payload Types:**
+
 - `JCR_PATH` - JCR repository path
 - `JCR_UUID` - JCR node UUID
 
@@ -272,6 +276,7 @@ List<WorkflowTransition> getTransitions()
 ```
 
 **Common Node Types:**
+
 - `PROCESS` - Process step
 - `PARTICIPANT` - Participant step (requires user action)
 - `AND_SPLIT` - Parallel split
@@ -319,6 +324,7 @@ WorkflowException(Throwable cause)
 ```
 
 **When to throw:**
+
 - Repository access failures
 - Invalid workflow configuration
 - Processing errors that should cause retry
@@ -335,11 +341,12 @@ Interface for dynamically selecting workflow participants.
 **Required Method:**
 
 ```java
-String getParticipant(WorkItem workItem, WorkflowSession workflowSession, MetaDataMap metaDataMap) 
+String getParticipant(WorkItem workItem, WorkflowSession workflowSession, MetaDataMap metaDataMap)
     throws WorkflowException
 ```
 
 **Returns:**
+
 - User ID (e.g., "admin")
 - Group ID (e.g., "content-authors")
 - Principal ID
@@ -371,6 +378,7 @@ user.mapping=[
 ```
 
 **Create service user in repo:**
+
 ```
 create service user workflow-service-user with path /home/users/system/workflow
 set ACL for workflow-service-user
@@ -404,6 +412,7 @@ workflowModel.getMetaDataMap().put("transient", true);
 ```
 
 **Limitations:**
+
 - No workflow history
 - Cannot pause/resume
 - No workflow inbox items
@@ -412,20 +421,21 @@ workflowModel.getMetaDataMap().put("transient", true);
 
 ### Package Mapping
 
-| Deprecated (CQ)                    | Modern (Granite)                     |
-|------------------------------------|--------------------------------------|
-| com.day.cq.workflow.WorkflowSession| com.adobe.granite.workflow.WorkflowSession|
-| com.day.cq.workflow.WorkflowException| com.adobe.granite.workflow.WorkflowException|
-| com.day.cq.workflow.exec.WorkItem  | com.adobe.granite.workflow.exec.WorkItem|
-| com.day.cq.workflow.exec.WorkflowProcess| com.adobe.granite.workflow.exec.WorkflowProcess|
-| com.day.cq.workflow.exec.Workflow  | com.adobe.granite.workflow.exec.Workflow|
-| com.day.cq.workflow.exec.WorkflowData| com.adobe.granite.workflow.exec.WorkflowData|
-| com.day.cq.workflow.metadata.MetaDataMap| com.adobe.granite.workflow.metadata.MetaDataMap|
-| com.day.cq.workflow.model.WorkflowModel| com.adobe.granite.workflow.model.WorkflowModel|
+| Deprecated (CQ)                          | Modern (Granite)                                |
+| ---------------------------------------- | ----------------------------------------------- |
+| com.day.cq.workflow.WorkflowSession      | com.adobe.granite.workflow.WorkflowSession      |
+| com.day.cq.workflow.WorkflowException    | com.adobe.granite.workflow.WorkflowException    |
+| com.day.cq.workflow.exec.WorkItem        | com.adobe.granite.workflow.exec.WorkItem        |
+| com.day.cq.workflow.exec.WorkflowProcess | com.adobe.granite.workflow.exec.WorkflowProcess |
+| com.day.cq.workflow.exec.Workflow        | com.adobe.granite.workflow.exec.Workflow        |
+| com.day.cq.workflow.exec.WorkflowData    | com.adobe.granite.workflow.exec.WorkflowData    |
+| com.day.cq.workflow.metadata.MetaDataMap | com.adobe.granite.workflow.metadata.MetaDataMap |
+| com.day.cq.workflow.model.WorkflowModel  | com.adobe.granite.workflow.model.WorkflowModel  |
 
 ### Code Migration Example
 
 **Before (CQ API - Deprecated):**
+
 ```java
 import com.day.cq.workflow.WorkflowSession;
 import com.day.cq.workflow.exec.WorkflowProcess;
@@ -433,6 +443,7 @@ import com.day.cq.workflow.exec.WorkItem;
 ```
 
 **After (Granite API - Correct):**
+
 ```java
 import com.adobe.granite.workflow.WorkflowSession;
 import com.adobe.granite.workflow.exec.WorkflowProcess;

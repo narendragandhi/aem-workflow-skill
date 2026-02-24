@@ -37,5 +37,19 @@
   ],
   "engines": {
     "node": ">=16.0.0"
+  },
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "prepare": "npm run lint && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jest": "^29.15.0",
+    "jest": "^30.2.0",
+    "prettier": "^3.8.1"
   }
 }

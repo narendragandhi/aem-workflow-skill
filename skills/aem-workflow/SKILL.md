@@ -14,6 +14,7 @@ Guide for developing custom workflows in AEM as a Cloud Service using the latest
 **CRITICAL**: Always use `com.adobe.granite.workflow` packages, NOT the deprecated `com.day.cq.workflow` packages.
 
 **Correct Imports:**
+
 ```java
 import com.adobe.granite.workflow.WorkflowException;
 import com.adobe.granite.workflow.WorkflowSession;
@@ -23,6 +24,7 @@ import com.adobe.granite.workflow.metadata.MetaDataMap;
 ```
 
 **Incorrect (Deprecated) Imports:**
+
 ```java
 // DO NOT USE - These are deprecated
 import com.day.cq.workflow.WorkflowException;
@@ -38,12 +40,14 @@ import com.day.cq.workflow.WorkflowSession;
 - Avoid long-running workflow processes (use external job processing if needed)
 
 **Asset Processing in Cloud Service:**
+
 - Traditional DAM Update Asset workflow has been replaced by **Asset Microservices**
 - Asset processing (renditions, metadata extraction) is now handled by cloud-native microservices
 - Custom asset processing should use **post-processing workflows** configured per folder
 - Post-processing workflows run AFTER Asset Microservices complete their processing
 
 **AEM Forms Workflows:**
+
 - Forms-centric workflows can ONLY run on Author instances
 - Adaptive Forms on Publish can submit data to workflows on Author
 - This pattern enables approval workflows for form submissions
@@ -52,6 +56,7 @@ import com.day.cq.workflow.WorkflowSession;
 ## Maven Dependencies
 
 ### Current SDK Version
+
 Latest AEM SDK API: `2025.11.23482.20251120T200914Z-251200`
 
 ### POM Configuration
@@ -66,6 +71,7 @@ Latest AEM SDK API: `2025.11.23482.20251120T200914Z-251200`
 ```
 
 ### Java Version Requirements
+
 - **AEM Cloud Service (2025.x+)**: Java 21 (LTS)
 - **Minimum Maven Version**: 3.8.6
 - **Required Plugins**:
@@ -73,12 +79,15 @@ Latest AEM SDK API: `2025.11.23482.20251120T200914Z-251200`
   - `maven-bundle-plugin`: 5.1.5+
 
 ### Java 21 Configuration
+
 Create `.cloudmanager/java-version` file in project root:
+
 ```
 21
 ```
 
 Update `pom.xml`:
+
 ```xml
 <properties>
     <maven.compiler.source>21</maven.compiler.source>
@@ -111,50 +120,50 @@ import org.slf4j.LoggerFactory;
     }
 )
 public class CustomWorkflowProcess implements WorkflowProcess {
-    
+
     private static final Logger LOG = LoggerFactory.getLogger(CustomWorkflowProcess.class);
-    
+
     @Override
-    public void execute(WorkItem workItem, WorkflowSession workflowSession, MetaDataMap metaDataMap) 
+    public void execute(WorkItem workItem, WorkflowSession workflowSession, MetaDataMap metaDataMap)
             throws WorkflowException {
-        
+
         try {
             // Get ResourceResolver from WorkflowSession
             ResourceResolver resolver = workflowSession.adaptTo(ResourceResolver.class);
-            
+
             // Get the workflow payload
             String payloadPath = workItem.getWorkflowData().getPayload().toString();
             LOG.info("Processing workflow for payload: {}", payloadPath);
-            
+
             // Get the resource
             Resource resource = resolver.getResource(payloadPath);
             if (resource == null) {
                 LOG.warn("Resource not found at path: {}", payloadPath);
                 return;
             }
-            
+
             // Read process arguments from MetaDataMap
             String customArg = metaDataMap.get("PROCESS_ARGS", String.class);
             LOG.info("Process arguments: {}", customArg);
-            
+
             // Access workflow metadata
             MetaDataMap workflowMetadata = workItem.getWorkflow().getMetaDataMap();
-            
+
             // Store data for next workflow step
             workflowMetadata.put("processedBy", "CustomWorkflowProcess");
             workflowMetadata.put("processedAt", System.currentTimeMillis());
-            
+
             // Perform custom processing logic here
             performCustomProcessing(resource, resolver);
-            
+
             LOG.info("Workflow processing completed successfully");
-            
+
         } catch (Exception e) {
             LOG.error("Error in workflow process", e);
             throw new WorkflowException("Failed to process workflow", e);
         }
     }
-    
+
     private void performCustomProcessing(Resource resource, ResourceResolver resolver) {
         // Custom business logic implementation
     }
@@ -164,10 +173,12 @@ public class CustomWorkflowProcess implements WorkflowProcess {
 ### Step 2: OSGi Component Configuration
 
 **Key Annotations:**
+
 - `@Component(service = WorkflowProcess.class)` - Registers as OSGi service
 - `property = {"process.label=..."}` - Sets display name in AEM Workflow console
 
 **Additional Properties (Optional):**
+
 ```java
 @Component(
     service = WorkflowProcess.class,
@@ -184,11 +195,13 @@ public class CustomWorkflowProcess implements WorkflowProcess {
 ### Obtaining WorkflowSession
 
 **From ResourceResolver:**
+
 ```java
 WorkflowSession workflowSession = resourceResolver.adaptTo(WorkflowSession.class);
 ```
 
 **From JCR Session:**
+
 ```java
 WorkflowSession workflowSession = jcrSession.adaptTo(WorkflowSession.class);
 ```
@@ -261,11 +274,11 @@ String processArgs = metaDataMap.get("PROCESS_ARGS", String.class);
 
 ```java
 // Store data for next workflow step
-private void persistData(WorkItem workItem, WorkflowSession workflowSession, 
+private void persistData(WorkItem workItem, WorkflowSession workflowSession,
                         String key, Object value) throws WorkflowException {
     MetaDataMap wfMetadata = workItem.getWorkflow().getMetaDataMap();
     wfMetadata.put(key, value);
-    workflowSession.updateWorkflowData(workItem.getWorkflow(), 
+    workflowSession.updateWorkflowData(workItem.getWorkflow(),
                                        workItem.getWorkflow().getWorkflowData());
 }
 
@@ -284,32 +297,32 @@ private ResourceResolverFactory resolverFactory;
 public void startWorkflow() throws WorkflowException {
     Map<String, Object> authInfo = new HashMap<>();
     authInfo.put(ResourceResolverFactory.SUBSERVICE, "workflow-service");
-    
+
     try (ResourceResolver resolver = resolverFactory.getServiceResourceResolver(authInfo)) {
         WorkflowSession workflowSession = resolver.adaptTo(WorkflowSession.class);
-        
+
         // Get workflow model (path changed in AEM 6.4+)
         // AEM 6.4+: /var/workflow/models/...
         // Pre-6.4: /etc/workflow/models/.../jcr:content/model
-        
+
         // NOTE: DAM Update Asset workflow replaced by Asset Microservices in Cloud Service
         // Use post-processing workflows for custom asset operations
         String modelPath = "/var/workflow/models/request_for_activation";
         WorkflowModel model = workflowSession.getModel(modelPath);
-        
+
         // Create workflow payload
         String pagePath = "/content/my-site/page";
         WorkflowData wfData = workflowSession.newWorkflowData("JCR_PATH", pagePath);
-        
+
         // Optional: Add workflow metadata
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("initiatedBy", "automated-process");
         metadata.put("priority", "high");
-        
+
         // Start the workflow
         Workflow workflow = workflowSession.startWorkflow(model, wfData, metadata);
-        
-        LOG.info("Started workflow: {} for payload: {}", 
+
+        LOG.info("Started workflow: {} for payload: {}",
                  workflow.getId(), pagePath);
     }
 }
@@ -321,20 +334,20 @@ public void startWorkflow() throws WorkflowException {
 
 ```java
 @Override
-public void execute(WorkItem workItem, WorkflowSession workflowSession, 
+public void execute(WorkItem workItem, WorkflowSession workflowSession,
                    MetaDataMap metaDataMap) throws WorkflowException {
     try {
         // Workflow logic
         performWorkflowLogic(workItem, workflowSession);
-        
+
     } catch (RepositoryException e) {
         LOG.error("JCR Repository error in workflow", e);
         throw new WorkflowException("Repository access failed", e);
-        
+
     } catch (IllegalArgumentException e) {
         LOG.error("Invalid workflow arguments", e);
         throw new WorkflowException("Invalid process configuration", e);
-        
+
     } catch (Exception e) {
         LOG.error("Unexpected error in workflow process", e);
         // Throwing WorkflowException will cause workflow to retry
@@ -365,6 +378,7 @@ ResourceResolver resolver = workflowSession.adaptTo(ResourceResolver.class);
 ### Workflow Model Locations
 
 **AEM 6.4+ / Cloud Service:**
+
 ```
 /var/workflow/models/request_for_activation
 /var/workflow/models/request_for_deactivation
@@ -372,11 +386,13 @@ ResourceResolver resolver = workflowSession.adaptTo(ResourceResolver.class);
 ```
 
 **Pre-AEM 6.4 (legacy):**
+
 ```
 /etc/workflow/models/dam/update_asset/jcr:content/model
 ```
 
 **IMPORTANT - Asset Processing:**
+
 - The traditional `/var/workflow/models/dam/update_asset` path may exist in the SDK but is NOT used in Cloud Service production
 - Asset processing is handled by Asset Microservices
 - For custom asset operations, configure post-processing workflows per folder in the DAM
@@ -384,12 +400,14 @@ ResourceResolver resolver = workflowSession.adaptTo(ResourceResolver.class);
 ### Common Workflow Models in AEM Cloud Service
 
 **IMPORTANT: Asset Processing Changes**
+
 - Traditional `/var/workflow/models/dam/update_asset` workflow has been replaced by **Asset Microservices** in AEM as a Cloud Service
 - Asset processing is now handled by cloud-native microservices, not traditional workflows
 - Use **post-processing workflows** for custom asset operations after microservices processing
 - For custom asset processing, create workflows that run AFTER Asset Microservices complete
 
 **Available Workflow Models:**
+
 - `/var/workflow/models/request_for_activation` - Request for Activation (page publishing)
 - `/var/workflow/models/request_for_deactivation` - Request for Deactivation
 - Post-processing workflows for custom asset operations (configured per folder)
@@ -429,6 +447,7 @@ private String extractDepartment(String path) {
 ```
 
 **Key validation rules:**
+
 - Reject paths containing `..` (parent directory traversal)
 - Sanitize user-provided group names to prevent injection
 - Validate workflow payload paths are within expected locations
@@ -452,6 +471,7 @@ private ResourceResolver getServiceResolver() throws LoginException {
 ```
 
 **Service user best practices:**
+
 - Create dedicated service users for each workflow subsystem
 - Use `subservice` authentication (not username/password)
 - Grant only read/write permissions for specific paths
@@ -478,6 +498,7 @@ Design permission scopes carefully:
 ```
 
 **Permission hierarchy:**
+
 - Authors: Create and edit content, submit for review
 - Reviewers: Approve/reject at department level
 - Managers: Escalate issues, override decisions
@@ -552,6 +573,7 @@ private void logWorkflowAction(String action, String user, String payload) {
 ```
 
 **Audit log recommendations:**
+
 - Log all approval/rejection decisions with user ID
 - Log escalation events and reasons
 - Log workflow initiation and completion
@@ -608,7 +630,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CustomWorkflowProcessTest {
-    
+
     @Test
     void testExecute() throws WorkflowException {
         // Arrange
@@ -617,15 +639,15 @@ class CustomWorkflowProcessTest {
         MetaDataMap metaDataMap = mock(MetaDataMap.class);
         WorkflowData workflowData = mock(WorkflowData.class);
         Workflow workflow = mock(Workflow.class);
-        
+
         when(workItem.getWorkflowData()).thenReturn(workflowData);
         when(workItem.getWorkflow()).thenReturn(workflow);
         when(workflowData.getPayload()).thenReturn("/content/dam/test.jpg");
-        
+
         // Act
         CustomWorkflowProcess process = new CustomWorkflowProcess();
         process.execute(workItem, workflowSession, metaDataMap);
-        
+
         // Assert - verify expected behavior
     }
 }
@@ -638,6 +660,7 @@ class CustomWorkflowProcessTest {
 Workflows often require user interaction. Implement participant steps for approval, review, or decision-making:
 
 **Participant Step Types:**
+
 - **Participant Step**: Assigns work item to specific user/group
 - **Dynamic Participant Step**: Determines assignee programmatically via script or service
 - **Dialog Participant Step**: Presents dialog for user input before proceeding
@@ -652,21 +675,21 @@ Workflows often require user interaction. Implement participant steps for approv
     }
 )
 public class CustomParticipantChooser implements ParticipantStepChooser {
-    
+
     @Override
-    public String getParticipant(WorkItem workItem, WorkflowSession workflowSession, 
+    public String getParticipant(WorkItem workItem, WorkflowSession workflowSession,
                                  MetaDataMap metaDataMap) throws WorkflowException {
-        
+
         // Determine assignee based on workflow context
         String payloadPath = workItem.getWorkflowData().getPayload().toString();
-        
+
         // Example: Assign based on content path
         if (payloadPath.startsWith("/content/we-retail")) {
             return "content-approvers"; // Group ID
         } else if (payloadPath.startsWith("/content/wknd")) {
             return "admin"; // User ID
         }
-        
+
         return "administrators"; // Default group
     }
 }
@@ -677,6 +700,7 @@ public class CustomParticipantChooser implements ParticipantStepChooser {
 ECMA (JavaScript) scripts can be used in various workflow steps to add dynamic logic. These scripts are stored in the JCR and have access to several workflow-related Java objects.
 
 **Available Variables:**
+
 - `graniteWorkItem`: The current work item.
 - `workflowData`: The workflow data.
 - `workflowSession`: The workflow session.
@@ -684,6 +708,7 @@ ECMA (JavaScript) scripts can be used in various workflow steps to add dynamic l
 - `log`: A logger object.
 
 **Use Cases:**
+
 - **Process Step:** Perform operations on the payload or metadata.
 - **Participant Step:** Dynamically select the participant.
 - **OR Split:** Define routing logic.
@@ -693,11 +718,11 @@ ECMA (JavaScript) scripts can be used in various workflow steps to add dynamic l
 ```javascript
 // Access the workflow payload and set a property
 var workflowData = graniteWorkItem.getWorkflowData();
-if (workflowData.getPayloadType() == "JCR_PATH") {
-    var path = workflowData.getPayload().toString();
-    var node = workflowSession.getSession().getItem(path);
-    node.setProperty("approved", true);
-    node.save();
+if (workflowData.getPayloadType() == 'JCR_PATH') {
+  var path = workflowData.getPayload().toString();
+  var node = workflowSession.getSession().getItem(path);
+  node.setProperty('approved', true);
+  node.save();
 }
 ```
 
@@ -717,11 +742,11 @@ This script checks the value of a "decision" metadata property and returns `true
 
 ```javascript
 function check() {
-    var decision = workflowData.getMetaDataMap().get("decision", "String");
-    if (decision == "approve") {
-        return true;
-    }
-    return false;
+  var decision = workflowData.getMetaDataMap().get('decision', 'String');
+  if (decision == 'approve') {
+    return true;
+  }
+  return false;
 }
 ```
 
@@ -732,6 +757,7 @@ You would have another branch with a similar script that returns `true` if `deci
 For participant steps that require user input beyond simple approval, you can create custom dialogs. These dialogs are built using Granite UI components, similar to authoring dialogs.
 
 **Use Cases:**
+
 - Capturing rejection reasons.
 - Assigning a task to a specific user from a dropdown.
 - Collecting metadata that needs to be reviewed before approval.
@@ -785,6 +811,7 @@ For participant steps that require user input beyond simple approval, you can cr
         </content>
     </jcr:root>
     ```
+
 3.  **Configure the Participant Step:** In your workflow model, select the "Dialog Participant Step" and set the "Dialog Path" property to the path of your dialog node (e.g., `/apps/my-project/workflow/dialogs/my-dialog/cq:dialog`).
 
 **Accessing Dialog Data in the Workflow:**
@@ -799,18 +826,18 @@ The data entered in the dialog is stored in the workflow's metadata. You can acc
     }
 )
 public class ProcessApprovalStep implements WorkflowProcess {
-    
+
     @Override
-    public void execute(WorkItem workItem, WorkflowSession workflowSession, MetaDataMap metaDataMap) 
+    public void execute(WorkItem workItem, WorkflowSession workflowSession, MetaDataMap metaDataMap)
             throws WorkflowException {
-        
+
         // Get the workflow metadata
         MetaDataMap workflowMetadata = workItem.getWorkflow().getMetaDataMap();
-        
+
         // Get the data from the dialog
         String comment = workflowMetadata.get("comment", String.class);
         String decision = workflowMetadata.get("decision", String.class);
-        
+
         if ("approve".equals(decision)) {
             // Logic for approval
         } else if ("reject".equals(decision)) {
@@ -825,6 +852,7 @@ public class ProcessApprovalStep implements WorkflowProcess {
 Users interact with workflows through the AEM Inbox:
 
 **User Actions Available:**
+
 - **Complete**: Approve and advance to next step
 - **Delegate**: Reassign work item to another user
 - **Step Back**: Return to previous workflow step
@@ -842,7 +870,7 @@ while (workItems.hasNext()) {
     WorkItem item = workItems.next();
     String payload = item.getWorkflowData().getPayload().toString();
     String assignee = item.getCurrentAssignee();
-    
+
     LOG.info("Work item: {} assigned to: {}", payload, assignee);
 }
 ```
@@ -852,6 +880,7 @@ while (workItems.hasNext()) {
 Automatically trigger workflows based on repository events:
 
 **Launcher Properties:**
+
 - **Event Type**: Created, Modified, Removed
 - **Node Type**: dam:Asset, cq:Page, etc.
 - **Path**: Repository path where launcher applies (supports wildcards)
@@ -860,11 +889,12 @@ Automatically trigger workflows based on repository events:
 - **Workflow Model**: Which workflow to start
 
 **Example Configuration (via JCR):**
+
 ```xml
 <jcr:root xmlns:jcr="http://www.jcp.org/jcr/1.0"
     jcr:primaryType="cq:WorkflowLauncher"
     description="Auto-process new assets in specific folder"
-    eventType="1" 
+    eventType="1"
     glob="/content/dam/auto-process/**"
     nodetype="dam:Asset"
     runModes="author"
@@ -872,6 +902,7 @@ Automatically trigger workflows based on repository events:
 ```
 
 **Event Types:**
+
 - `1` = Created
 - `2` = Modified
 - `4` = Removed
@@ -891,6 +922,7 @@ wfMetadata.put("stageStartTime", System.currentTimeMillis());
 ```
 
 **Best Practices for Stages:**
+
 - Keep stage names consistent across workflows
 - Limit to 5-7 stages for clarity
 - Update stage at beginning of each major phase
@@ -907,11 +939,13 @@ wfMetadata.put("stageStartTime", System.currentTimeMillis());
 In AEM as a Cloud Service, asset processing has fundamentally changed:
 
 **Traditional (AEM 6.x and earlier):**
+
 - Assets processed via DAM Update Asset workflow
 - Synchronous processing in AEM instance
 - Limited scalability
 
 **Cloud Service (Current):**
+
 - Asset processing handled by cloud-native Asset Microservices
 - Automatic rendition generation, metadata extraction
 - Horizontally scalable and highly performant
@@ -930,6 +964,7 @@ Use **post-processing workflows** that run AFTER Asset Microservices complete:
    **IMPORTANT**: Post-processing workflows MUST end with the **"DAM Update Asset Workflow Completed"** process step. This step signals to Asset Microservices that custom processing is complete. Without this step, the asset may appear stuck in "processing" state.
 
 2. **Create Custom Post-Processing Workflow Step:**
+
 ```java
 @Component(
     service = WorkflowProcess.class,
@@ -938,23 +973,23 @@ Use **post-processing workflows** that run AFTER Asset Microservices complete:
     }
 )
 public class CustomAssetPostProcessor implements WorkflowProcess {
-    
+
     @Override
-    public void execute(WorkItem workItem, WorkflowSession wfSession, MetaDataMap metaDataMap) 
+    public void execute(WorkItem workItem, WorkflowSession wfSession, MetaDataMap metaDataMap)
             throws WorkflowException {
-        
+
         // Asset has already been processed by Asset Microservices
         // Renditions, metadata extraction are complete
-        
+
         String assetPath = workItem.getWorkflowData().getPayload().toString();
         ResourceResolver resolver = wfSession.adaptTo(ResourceResolver.class);
-        
+
         Resource assetResource = resolver.getResource(assetPath);
         Asset asset = assetResource.adaptTo(Asset.class);
-        
+
         // Perform custom operations AFTER microservices processing
         // Examples: custom metadata, external system integration, tagging
-        
+
         LOG.info("Post-processing asset: {}", assetPath);
     }
 }
@@ -966,6 +1001,7 @@ public class CustomAssetPostProcessor implements WorkflowProcess {
    - Useful after updating processing profiles
 
 **For Bulk Asset Operations:**
+
 - Use Asset Compute SDK for custom processing workers
 - Configure as part of processing profiles
 - Runs in Adobe I/O Runtime
@@ -975,12 +1011,14 @@ public class CustomAssetPostProcessor implements WorkflowProcess {
 ACS AEM Commons provides a powerful tool for running workflows on a large number of resources in bulk. This is particularly useful for content migrations, bulk updates, or reprocessing large sets of assets.
 
 **Key Features:**
+
 - **Bulk Execution**: Run a workflow model against a list of payloads.
 - **Query-based Payloads**: Use a JCR2 query to dynamically select the resources to process.
 - **Throttling**: Control the rate at which workflows are created to avoid overwhelming the system.
 - **Synthetic Workflow Integration**: Can be used with Synthetic Workflows for high-performance processing.
 
 **When to Use It:**
+
 - Activating a large number of pages.
 - Applying a new metadata schema to thousands of assets.
 - Running a custom workflow on all content within a specific path.
@@ -1003,11 +1041,13 @@ MetaDataMap metadata = workItem.getWorkflow().getMetaDataMap();
 Synthetic Workflow is a feature of ACS AEM Commons that allows for the execution of AEM Workflow Processes without the overhead of the full AEM Workflow Engine. It directly calls the `WorkflowProcess` implementation, bypassing the creation of Sling Jobs and workflow instances.
 
 **Benefits:**
+
 - **Performance**: Much faster than traditional workflows, especially for a large number of invocations.
 - **Simplicity**: Avoids the complexity of creating and managing workflow models for simple, single-process tasks.
 - **Reduced Load**: Less impact on the AEM instance's resources.
 
 **Limitations:**
+
 - **No External Steps**: Does not support steps that are not implemented as a `WorkflowProcess`.
 - **No Participant Steps**: Cannot be used for workflows that require user interaction.
 - **Single Process**: Only supports a single `WorkflowProcess` step.
@@ -1023,13 +1063,13 @@ For high-performance bulk processing without full workflow engine overhead (prim
 private SyntheticWorkflowRunner syntheticWorkflowRunner;
 
 public void processBulkContent(List<String> contentPaths, String workflowModelPath) {
-    SyntheticWorkflowModel model = 
+    SyntheticWorkflowModel model =
         syntheticWorkflowRunner.getSyntheticWorkflowModel(
-            resourceResolver, 
+            resourceResolver,
             workflowModelPath,
             true // Track progress
         );
-    
+
     for (String contentPath : contentPaths) {
         syntheticWorkflowRunner.execute(
             resourceResolver,
@@ -1080,7 +1120,7 @@ private void sendEmail(String recipient, String subject, String body) {
     Email email = new HtmlEmail();
     email.setSubject(subject);
     email.setMsg(body);
-    
+
     try {
         emailService.send(email);
     } catch (Exception e) {
@@ -1097,15 +1137,15 @@ private void processAsset(Resource assetResource) {
     if (asset == null) {
         return;
     }
-    
+
     // Get original rendition
     Rendition original = asset.getOriginal();
-    
+
     // Process renditions
     for (Rendition rendition : asset.getRenditions()) {
         // Custom rendition processing
     }
-    
+
     // Update metadata
     ModifiableValueMap metadata = assetResource.adaptTo(ModifiableValueMap.class);
     metadata.put("processedDate", new Date());
@@ -1117,6 +1157,7 @@ private void processAsset(Resource assetResource) {
 ### Workflow Administration
 
 **Workflow Console Locations:**
+
 - **Models**: `/libs/cq/workflow/admin/console/content/models.html`
 - **Instances**: `/libs/cq/workflow/admin/console/content/instances.html`
 - **Launchers**: `/libs/cq/workflow/admin/console/content/launchers.html`
@@ -1124,6 +1165,7 @@ private void processAsset(Resource assetResource) {
 - **Failures**: `/libs/cq/workflow/admin/console/content/failures.html`
 
 **Workflow Instance States:**
+
 - `RUNNING` - Workflow is actively executing
 - `COMPLETED` - Workflow finished successfully
 - `ABORTED` - Workflow was terminated
@@ -1161,6 +1203,7 @@ scheduledpurge.webjobs = false
 ```
 
 **Properties:**
+
 - `scheduledpurge.name` - Name for this purge configuration
 - `scheduledpurge.workflowStatus` - Which status to purge (COMPLETED, ABORTED)
 - `scheduledpurge.modelIds` - Specific models, or empty for all
@@ -1172,6 +1215,7 @@ scheduledpurge.webjobs = false
 When workflows fail, use the Failures console:
 
 **Available Actions:**
+
 - **Failure Details** - View error message, step, and stack trace
 - **Open History** - See complete workflow execution history
 - **Retry Step** - Re-execute failed step after fixing cause
@@ -1182,24 +1226,24 @@ When workflows fail, use the Failures console:
 
 ```java
 @Override
-public void execute(WorkItem workItem, WorkflowSession wfSession, MetaDataMap args) 
+public void execute(WorkItem workItem, WorkflowSession wfSession, MetaDataMap args)
         throws WorkflowException {
-    
+
     try {
         // Workflow logic
-        
+
     } catch (Exception e) {
         // Log detailed context for troubleshooting
-        LOG.error("Workflow failed for payload: {}, model: {}, step: {}", 
+        LOG.error("Workflow failed for payload: {}, model: {}, step: {}",
             workItem.getWorkflowData().getPayload(),
             workItem.getWorkflow().getWorkflowModel().getId(),
             workItem.getNode().getTitle(),
             e);
-        
+
         // Add failure context to workflow metadata
         workItem.getWorkflow().getMetaDataMap().put("failureReason", e.getMessage());
         workItem.getWorkflow().getMetaDataMap().put("failureTimestamp", new Date());
-        
+
         throw new WorkflowException("Processing failed", e);
     }
 }
@@ -1208,25 +1252,30 @@ public void execute(WorkItem workItem, WorkflowSession wfSession, MetaDataMap ar
 ### Common Issues
 
 **Issue: "Process implementation not found"**
+
 - Verify OSGi bundle is active
 - Check `@Component` annotation has correct `service = WorkflowProcess.class`
 - Ensure `process.label` property is set
 
 **Issue: Cannot adapt WorkflowSession**
+
 - Ensure using `com.adobe.granite.workflow.WorkflowSession`
 - Not `com.day.cq.workflow.WorkflowSession` (deprecated)
 
 **Issue: Workflow hangs or doesn't progress**
+
 - Check for exceptions in logs
 - Verify workflow has proper routes configured
 - Ensure participant steps have assigned users/groups
 
 **Issue: Java version mismatch**
+
 - Ensure project uses Java 21 for AEM Cloud Service 2025.x
 - Update `.cloudmanager/java-version` to `21`
 - Update Maven compiler settings
 
 **Issue: Workflow payload is null or incorrect**
+
 - Verify payload type matches expected format (JCR_PATH vs JCR_UUID)
 - Check if resource still exists at payload path
 - Ensure launcher configuration matches node type
@@ -1236,23 +1285,25 @@ public void execute(WorkItem workItem, WorkflowSession wfSession, MetaDataMap ar
 Handle workflows that process multiple resources:
 
 **Enable Multi-Resource Support:**
+
 ```java
 // Workflow model metadata
 workflowModel.getMetaDataMap().put("multiResourceSupport", true);
 ```
 
 **Processing Multiple Resources:**
+
 ```java
 @Override
-public void execute(WorkItem workItem, WorkflowSession wfSession, MetaDataMap args) 
+public void execute(WorkItem workItem, WorkflowSession wfSession, MetaDataMap args)
         throws WorkflowException {
-    
+
     String payloadPath = workItem.getWorkflowData().getPayload().toString();
     ResourceResolver resolver = wfSession.adaptTo(ResourceResolver.class);
-    
+
     // Check if this is a workflow package (multiple resources)
     Resource resource = resolver.getResource(payloadPath);
-    
+
     if (resource != null && resource.isResourceType("cq/workflow/components/collection")) {
         // This is a workflow package - process all contained resources
         Resource collectionContent = resource.getChild("list");
@@ -1283,6 +1334,7 @@ AEM as a Cloud Service introduces **UI Extensibility** for integrating workflows
 ### Overview
 
 Content Fragment workflows allow authors to:
+
 - Trigger approval workflows from the CF Editor
 - Submit content for review without leaving the editor
 - Track workflow status inline
@@ -1299,22 +1351,23 @@ aio app init my-cf-workflow-extension --template @adobe/aem-cf-editor-ui-ext-tpl
 
 ```javascript
 // src/aem-cf-editor-1/web-src/src/components/ExtensionRegistration.js
-import { register } from "@adobe/uix-guest";
+import { register } from '@adobe/uix-guest';
 
 function ExtensionRegistration() {
   const init = async () => {
     const guestConnection = await register({
-      id: "cf-workflow-extension",
+      id: 'cf-workflow-extension',
       methods: {
         actionBar: {
           getButtons() {
             return [
               {
-                id: "start-approval-workflow",
-                label: "Submit for Approval",
-                icon: "Workflow",
+                id: 'start-approval-workflow',
+                label: 'Submit for Approval',
+                icon: 'Workflow',
                 onClick: async () => {
-                  const contentFragment = await guestConnection.host.contentFragment.getContentFragment();
+                  const contentFragment =
+                    await guestConnection.host.contentFragment.getContentFragment();
                   // Trigger workflow via AEM API
                   await startWorkflow(contentFragment.path);
                 }
@@ -1335,8 +1388,8 @@ function ExtensionRegistration() {
 
 ```javascript
 // src/aem-cf-editor-1/actions/start-workflow/index.js
-const { Core } = require("@adobe/aio-sdk");
-const { getAEMAccessToken } = require("../utils");
+const { Core } = require('@adobe/aio-sdk');
+const { getAEMAccessToken } = require('../utils');
 
 async function main(params) {
   const { contentFragmentPath, workflowModel } = params;
@@ -1346,14 +1399,14 @@ async function main(params) {
 
   // Start workflow via AEM REST API
   const response = await fetch(`${aemHost}/etc/workflow/instances`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Authorization": `Bearer ${accessToken}`,
-      "Content-Type": "application/x-www-form-urlencoded"
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: new URLSearchParams({
-      model: workflowModel || "/var/workflow/models/request_for_activation",
-      payloadType: "JCR_PATH",
+      model: workflowModel || '/var/workflow/models/request_for_activation',
+      payloadType: 'JCR_PATH',
       payload: contentFragmentPath
     })
   });
@@ -1402,12 +1455,12 @@ Create custom views and actions in the AEM Inbox:
 ```javascript
 // Custom inbox action
 const inboxExtension = {
-  id: "custom-bulk-approve",
-  label: "Bulk Approve",
-  icon: "CheckmarkCircle",
+  id: 'custom-bulk-approve',
+  label: 'Bulk Approve',
+  icon: 'CheckmarkCircle',
   onClick: async (selectedItems) => {
     for (const item of selectedItems) {
-      await completeWorkItem(item.workItemId, "approve");
+      await completeWorkItem(item.workItemId, 'approve');
     }
   }
 };
@@ -1419,7 +1472,7 @@ Build standalone dashboards that integrate with AEM workflows:
 
 ```javascript
 // Fetch workflow instances
-async function getWorkflowInstances(status = "RUNNING") {
+async function getWorkflowInstances(status = 'RUNNING') {
   const response = await fetch(
     `${aemHost}/libs/cq/workflow/content/console/content/instances.json?status=${status}`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -1437,7 +1490,7 @@ function WorkflowDashboard() {
 
   return (
     <Table>
-      {instances.map(wf => (
+      {instances.map((wf) => (
         <Row key={wf.id}>
           <Cell>{wf.payload}</Cell>
           <Cell>{wf.state}</Cell>

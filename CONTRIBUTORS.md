@@ -45,24 +45,28 @@ To be listed as a contributor:
 ## Contribution Categories
 
 ### Code Contributions
+
 - New workflow process implementations
 - Bug fixes and patches
 - Performance improvements
 - Security enhancements
 
 ### Documentation
+
 - API documentation
 - Usage examples and tutorials
 - Troubleshooting guides
 - Best practices guides
 
 ### Testing
+
 - Unit tests
 - Integration tests
 - Test documentation
 - Test frameworks and utilities
 
 ### Community Support
+
 - Issue resolution
 - Code review
 - Mentoring contributors
@@ -71,18 +75,21 @@ To be listed as a contributor:
 ## Team Structure
 
 ### Maintainers
+
 - Review and merge pull requests
 - Manage roadmap and priorities
 - Ensure code quality and consistency
 - Release management
 
 ### Contributors
+
 - Submit pull requests
 - Participate in code review
 - Report and triage issues
 - Improve documentation
 
 ### Community
+
 - Report issues
 - Suggest improvements
 - Share use cases
@@ -91,6 +98,7 @@ To be listed as a contributor:
 ## Contact
 
 For questions about contributing, please:
+
 - Open an issue with the "question" label
 - Use GitHub Discussions
 - Review existing issues for context

@@ -45,28 +45,28 @@ import org.slf4j.LoggerFactory;
     }
 )
 public class CustomWorkflowProcess implements WorkflowProcess {
-    
+
     private static final Logger LOG = LoggerFactory.getLogger(CustomWorkflowProcess.class);
-    
+
     @Override
-    public void execute(WorkItem workItem, WorkflowSession workflowSession, MetaDataMap metaDataMap) 
+    public void execute(WorkItem workItem, WorkflowSession workflowSession, MetaDataMap metaDataMap)
             throws WorkflowException {
-        
+
         try {
             ResourceResolver resolver = workflowSession.adaptTo(ResourceResolver.class);
             String payloadPath = workItem.getWorkflowData().getPayload().toString();
             LOG.info("Processing workflow for payload: {}", payloadPath);
-            
+
             Resource resource = resolver.getResource(payloadPath);
             if (resource == null) {
                 LOG.warn("Resource not found at path: {}", payloadPath);
                 return;
             }
-            
+
             // Your custom logic here
-            
+
             LOG.info("Workflow processing completed successfully");
-            
+
         } catch (Exception e) {
             LOG.error("Error in workflow process", e);
             throw new WorkflowException("Failed to process workflow", e);
@@ -98,21 +98,21 @@ private ResourceResolverFactory resolverFactory;
 public void startWorkflow() throws WorkflowException {
     Map<String, Object> authInfo = new HashMap<>();
     authInfo.put(ResourceResolverFactory.SUBSERVICE, "workflow-service");
-    
+
     try (ResourceResolver resolver = resolverFactory.getServiceResourceResolver(authInfo)) {
         WorkflowSession workflowSession = resolver.adaptTo(WorkflowSession.class);
-        
+
         String modelPath = "/var/workflow/models/request_for_activation";
         WorkflowModel model = workflowSession.getModel(modelPath);
-        
+
         String pagePath = "/content/my-site/page";
         WorkflowData wfData = workflowSession.newWorkflowData("JCR_PATH", pagePath);
-        
+
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("initiatedBy", "automated-process");
-        
+
         Workflow workflow = workflowSession.startWorkflow(model, wfData, metadata);
-        
+
         LOG.info("Started workflow: {} for payload: {}", workflow.getId(), pagePath);
     }
 }
@@ -120,11 +120,11 @@ public void startWorkflow() throws WorkflowException {
 
 **Key Points:**
 
-*   Use a service user to get a `ResourceResolver`.
-*   Adapt the `ResourceResolver` to a `WorkflowSession`.
-*   Get the `WorkflowModel` you want to start.
-*   Create a `WorkflowData` object with the payload path.
-*   Call `workflowSession.startWorkflow()`.
+- Use a service user to get a `ResourceResolver`.
+- Adapt the `ResourceResolver` to a `WorkflowSession`.
+- Get the `WorkflowModel` you want to start.
+- Create a `WorkflowData` object with the payload path.
+- Call `workflowSession.startWorkflow()`.
 
 **Evaluation:**
 
@@ -146,19 +146,19 @@ Here's an example of a dynamic participant chooser:
     }
 )
 public class CustomParticipantChooser implements ParticipantStepChooser {
-    
+
     @Override
-    public String getParticipant(WorkItem workItem, WorkflowSession workflowSession, 
+    public String getParticipant(WorkItem workItem, WorkflowSession workflowSession,
                                  MetaDataMap metaDataMap) throws WorkflowException {
-        
+
         String payloadPath = workItem.getWorkflowData().getPayload().toString();
-        
+
         if (payloadPath.startsWith("/content/we-retail")) {
             return "content-approvers"; // Group ID
         } else if (payloadPath.startsWith("/content/wknd")) {
             return "admin"; // User ID
         }
-        
+
         return "administrators"; // Default group
     }
 }

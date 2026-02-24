@@ -47,12 +47,14 @@ git push -u origin main
 ### 3. Configure Repository Settings
 
 **Settings → General:**
+
 - ✅ Issues enabled
 - ✅ Discussions enabled (recommended)
 - ✅ Projects enabled (optional)
 - ✅ Wiki disabled (use docs/ instead)
 
 **Settings → Branches:**
+
 - Default branch: `main`
 - Branch protection rules for `main`:
   - ✅ Require pull request reviews before merging
@@ -60,6 +62,7 @@ git push -u origin main
   - ✅ Require branches to be up to date
 
 **Settings → Pages (Optional):**
+
 - Source: Deploy from branch
 - Branch: `main`
 - Folder: `/docs`
@@ -67,6 +70,7 @@ git push -u origin main
 ### 4. Add Topics
 
 Settings → General → Topics:
+
 - `adobe-experience-manager`
 - `aem`
 - `claude-ai`
@@ -80,17 +84,20 @@ Settings → General → Topics:
 Issues → Labels → New label:
 
 **Type Labels:**
+
 - `bug` - Something isn't working (red)
 - `enhancement` - New feature request (blue)
 - `documentation` - Documentation improvements (yellow)
 - `question` - Questions or help needed (purple)
 
 **Priority Labels:**
+
 - `priority-high` - High priority (red)
 - `priority-medium` - Medium priority (orange)
 - `priority-low` - Low priority (green)
 
 **Status Labels:**
+
 - `good-first-issue` - Good for newcomers (green)
 - `help-wanted` - Extra attention needed (green)
 - `wontfix` - Won't be worked on (white)
@@ -126,6 +133,7 @@ If automatic release doesn't work:
 ### 8. Update README Badges
 
 Edit README.md and update:
+
 ```markdown
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/YOUR-USERNAME/aem-workflow-skill)](https://github.com/YOUR-USERNAME/aem-workflow-skill/releases)
@@ -174,19 +182,19 @@ on: [push, pull_request]
 jobs:
   validate:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Check skill structure
-      run: |
-        test -f docs/SKILL.md || exit 1
-        test -f releases/aem-workflow-development.skill || exit 1
-    
-    - name: Validate Markdown
-      uses: actionlint/markdownlint-cli2-action@v1
-      with:
-        globs: '**/*.md'
+      - uses: actions/checkout@v3
+
+      - name: Check skill structure
+        run: |
+          test -f docs/SKILL.md || exit 1
+          test -f releases/aem-workflow-development.skill || exit 1
+
+      - name: Validate Markdown
+        uses: actionlint/markdownlint-cli2-action@v1
+        with:
+          globs: '**/*.md'
 ```
 
 ### Issue Templates
@@ -211,6 +219,7 @@ Steps to reproduce the behavior.
 What you expected to happen.
 
 **Environment:**
+
 - AEM Version: [e.g., Cloud Service 2025.11]
 - Java Version: [e.g., 21]
 - Skill Version: [e.g., 1.0.0]
@@ -225,20 +234,24 @@ Create `.github/pull_request_template.md`:
 
 ```markdown
 ## Description
+
 Brief description of changes.
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Documentation update
 - [ ] Code refactoring
 
 ## Testing
+
 - [ ] Tested locally
 - [ ] Code compiles
 - [ ] Documentation updated
 
 ## Checklist
+
 - [ ] Code follows style guidelines
 - [ ] Comments added for complex logic
 - [ ] CHANGELOG.md updated
@@ -296,6 +309,7 @@ Create `SECURITY.md`:
 ## Reporting a Vulnerability
 
 Please report security vulnerabilities to:
+
 - Email: [your-email]
 - Do NOT open public issues for security problems
 ```

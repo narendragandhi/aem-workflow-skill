@@ -11,16 +11,16 @@ jobs:
     permissions:
       contents: write
       releases: write
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Create Release
-      uses: ncipollo/release-action@v1
-      with:
-        artifacts: "./releases/aem-workflow-development.skill"
-        artifactContentType: "application/zip"
-        bodyFilePath: "CHANGELOG.md"
-        draft: false
-        prerelease: false
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: './releases/aem-workflow-development.skill'
+          artifactContentType: 'application/zip'
+          bodyFilePath: 'CHANGELOG.md'
+          draft: false
+          prerelease: false

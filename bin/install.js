@@ -48,14 +48,25 @@ const PLATFORMS = {
   }
 };
 
+// ANSI Color Codes
+const colors = {
+  reset: '\x1b[0m',
+  bright: '\x1b[1m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  cyan: '\x1b[36m',
+  red: '\x1b[31m'
+};
+
 function printBanner() {
   console.log(`
-╔═══════════════════════════════════════════════════════════════════╗
-║         AEM Workflow Development - AI Assistant Skill             ║
+${colors.cyan}╔═══════════════════════════════════════════════════════════════════╗
+║         ${colors.bright}AEM Workflow Development - AI Assistant Skill${colors.reset}${colors.cyan}             ║
 ║                                                                   ║
 ║  Expert guidance for Adobe Experience Manager workflows           ║
 ║  Supports: Claude Code | Copilot | Gemini | Cursor | Windsurf     ║
-╚═══════════════════════════════════════════════════════════════════╝
+╚═══════════════════════════════════════════════════════════════════╝${colors.reset}
 `);
 }
 
@@ -207,7 +218,9 @@ function installForPlatform(platform, targetDir, isGlobal) {
   }
 
   if (isGlobal && !config.global) {
-    console.log(`  ⚠ ${config.name} does not support global installation, using project-level`);
+    console.log(
+      `  ${colors.yellow}⚠${colors.reset} ${config.name} does not support global installation, using project-level`
+    );
     isGlobal = false;
   }
 
@@ -226,7 +239,9 @@ function installForPlatform(platform, targetDir, isGlobal) {
 
   // Write file
   fs.writeFileSync(skillFile, transformedContent);
-  console.log(`  ✓ ${config.name}: ${skillFile}`);
+  console.log(
+    `  ${colors.green}✓${colors.reset} ${config.name}: ${colors.blue}${skillFile}${colors.reset}`
+  );
 
   return skillFile;
 }
@@ -240,7 +255,7 @@ function uninstallForPlatform(platform, targetDir, isGlobal) {
 
   if (fs.existsSync(skillFile)) {
     fs.unlinkSync(skillFile);
-    console.log(`  ✓ Removed ${config.name}: ${skillFile}`);
+    console.log(`  ${colors.green}✓${colors.reset} Removed ${config.name}: ${skillFile}`);
   }
 
   // Also check legacy location
@@ -251,7 +266,9 @@ function uninstallForPlatform(platform, targetDir, isGlobal) {
       const content = fs.readFileSync(legacyFile, 'utf8');
       if (content.includes('aem-workflow-skill')) {
         fs.unlinkSync(legacyFile);
-        console.log(`  ✓ Removed legacy ${config.name}: ${legacyFile}`);
+        console.log(
+          `  ${colors.green}✓${colors.reset} Removed legacy ${config.name}: ${legacyFile}`
+        );
       }
     }
   }
@@ -335,9 +352,7 @@ function main() {
   const targetDir = process.cwd();
 
   // Determine which platforms to process
-  const platformsToProcess = platform === 'all'
-    ? Object.keys(PLATFORMS)
-    : [platform];
+  const platformsToProcess = platform === 'all' ? Object.keys(PLATFORMS) : [platform];
 
   // Validate platforms
   for (const p of platformsToProcess) {
@@ -349,38 +364,38 @@ function main() {
 
   try {
     if (isUninstall) {
-      console.log('Uninstalling AEM Workflow Skill...\n');
+      console.log(`${colors.yellow}Uninstalling AEM Workflow Skill...${colors.reset}\n`);
       for (const p of platformsToProcess) {
         uninstallForPlatform(p, targetDir, isGlobal);
       }
-      console.log('\nUninstallation complete!');
+      console.log(`\n${colors.green}Uninstallation complete!${colors.reset}`);
     } else {
-      console.log(`Installing AEM Workflow Skill v${VERSION}...\n`);
+      console.log(`${colors.cyan}Installing AEM Workflow Skill v${VERSION}...${colors.reset}\n`);
       const installed = [];
       for (const p of platformsToProcess) {
         try {
           const file = installForPlatform(p, targetDir, isGlobal);
           installed.push({ platform: p, file });
         } catch (error) {
-          console.error(`  ✗ ${PLATFORMS[p].name}: ${error.message}`);
+          console.error(`  ${colors.red}✗${colors.reset} ${PLATFORMS[p].name}: ${error.message}`);
         }
       }
 
       console.log(`
-Installation complete!
+${colors.green}${colors.bright}Installation complete!${colors.reset}
 
 The AEM Workflow Development skill is now available for:`);
       for (const { platform: p } of installed) {
-        console.log(`  • ${PLATFORMS[p].name}`);
+        console.log(`  ${colors.blue}•${colors.reset} ${PLATFORMS[p].name}`);
       }
 
       console.log(`
-Usage Examples:
-  "How do I create a custom workflow process step in AEM Cloud Service?"
-  "Show me how to implement a post-processing workflow for assets"
-  "What's the correct way to programmatically start a workflow?"
+${colors.bright}Usage Examples:${colors.reset}
+  ${colors.cyan}"How do I create a custom workflow process step in AEM Cloud Service?"${colors.reset}
+  ${colors.cyan}"Show me how to implement a post-processing workflow for assets"${colors.reset}
+  ${colors.cyan}"What's the correct way to programmatically start a workflow?"${colors.reset}
 
-Documentation: https://github.com/narendragandhi/aem-workflow-skill
+${colors.yellow}Documentation:${colors.reset} ${colors.blue}https://github.com/narendragandhi/aem-workflow-skill${colors.reset}
 `);
     }
   } catch (error) {
@@ -389,4 +404,15 @@ Documentation: https://github.com/narendragandhi/aem-workflow-skill
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  PLATFORMS,
+  transformForCopilot,
+  transformForGemini,
+  transformForCursor,
+  transformForWindsurf,
+  VERSION
+};
