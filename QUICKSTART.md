@@ -138,14 +138,14 @@ aem-workflow-skill-repo/
 │       └── release.yml          # Auto-release on tag
 ├── releases/
 │   └── aem-workflow-development.skill  # Downloadable skill
-├── docs/
-│   ├── SKILL.md                # Main skill documentation
-│   ├── references/
-│   │   └── workflow-api-reference.md  # API docs
-│   └── scripts/                # Code templates
-│       ├── BasicWorkflowProcessTemplate.java
-│       ├── DamAssetWorkflowProcessTemplate.java
-│       └── WorkflowStarterTemplate.java
+├── bin/install.js               # npx installer (single-file targets)
+├── test/                        # Jest tests
+├── tools/package-skill.js       # Builds releases/aem-workflow-development.skill
+├── verification/                # Java template build, JUnit tests, on-AEM run
+├── skills/aem-workflow-development/  # The skill, self-contained (same layout as the .skill package)
+│   ├── SKILL.md                 # Core guidance, loaded whenever the skill is used
+│   ├── references/              # Loaded on demand (API, security, App Builder, ACS, assets)
+│   └── scripts/                 # Java templates (process steps, approval, long-running job, AI step)
 └── examples/
     └── CustomMetadataExtractorWorkflow.java  # Full example
 ```

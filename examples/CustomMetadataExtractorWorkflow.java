@@ -79,7 +79,7 @@ public class CustomMetadataExtractorWorkflow implements WorkflowProcess {
             extractCustomMetadata(asset, assetResource, resolver);
             
             // Update workflow metadata
-            MetaDataMap workflowMetadata = workItem.getWorkflow().getMetaDataMap();
+            MetaDataMap workflowMetadata = workItem.getWorkflowData().getMetaDataMap();
             workflowMetadata.put("lastProcessedAsset", assetPath);
             workflowMetadata.put("processingComplete", true);
             

@@ -4,17 +4,24 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+// File names used for single-file targets (kept stable so upgrades overwrite in place)
 const SKILL_NAME = 'aem-workflow';
-const VERSION = '1.3.0';
+// The skill's own name: its folder and the `name` in SKILL.md frontmatter
+const SKILL_ID = 'aem-workflow-development';
+const VERSION = require('../package.json').version;
 
 // Platform configurations
 const PLATFORMS = {
   claude: {
     name: 'Claude Code',
     dir: '.claude/skills',
-    filename: `${SKILL_NAME}.md`,
+    // Claude Code loads skills from <skills dir>/<name>/SKILL.md, with references/ and
+    // scripts/ beside it, so this target gets the whole folder instead of one file.
+    folder: SKILL_ID,
+    filename: 'SKILL.md',
+    legacyFile: `${SKILL_NAME}.md`, // single-file location used up to v1.3.0
     global: path.join(os.homedir(), '.claude', 'skills'),
-    transform: (content) => content // No transformation needed
+    transform: (content) => content
   },
   copilot: {
     name: 'GitHub Copilot',
@@ -70,16 +77,61 @@ ${colors.cyan}╔═════════════════════
 `);
 }
 
+const SKILL_DIR = path.join(__dirname, '..', 'skills', SKILL_ID);
+const REPO_FILE_URL = `https://github.com/narendragandhi/aem-workflow-skill/blob/main/skills/${SKILL_ID}/`;
+
+// SKILL.md keeps rarely-needed material in references/ so skill-aware tools load it
+// on demand. Every install target here is a single file that cannot follow relative
+// links, so these references are appended to the installed file instead.
+const INLINED_REFERENCES = [
+  'references/workflow-security.md',
+  'references/app-builder-workflow-ui.md',
+  'references/acs-commons-workflows.md',
+  'references/asset-and-multi-resource-workflows.md'
+];
+
+function anchorFor(relPath) {
+  return 'reference-' + path.basename(relPath, '.md');
+}
+
+// One level deeper for every Markdown heading, leaving fenced code (bash comments) alone.
+function nestHeadings(markdown) {
+  let inFence = false;
+  return markdown
+    .split('\n')
+    .map((line) => {
+      if (line.trimStart().startsWith('```')) {
+        inFence = !inFence;
+        return line;
+      }
+      return !inFence && /^#{1,5} /.test(line) ? '#' + line : line;
+    })
+    .join('\n');
+}
+
+// Inline the listed references and rewrite relative links: inlined references point
+// to their appended section, everything else (scripts, API reference) to the repo.
+function bundleForSingleFile(content, readReference) {
+  const appendix = INLINED_REFERENCES.map((rel) => {
+    const body = nestHeadings(readReference(rel).trim());
+    return `\n\n---\n\n<a id="${anchorFor(rel)}"></a>\n\n${body}`;
+  });
+
+  const linked = content.replace(/\]\(((?:references|scripts)\/[^)\s]+)\)/g, (match, rel) =>
+    INLINED_REFERENCES.includes(rel) ? `](#${anchorFor(rel)})` : `](${REPO_FILE_URL}${rel})`
+  );
+
+  return linked.trimEnd() + appendix.join('') + '\n';
+}
+
 function getSkillContent() {
-  const skillPath = path.join(__dirname, '..', 'skills', 'aem-workflow', 'SKILL.md');
-  if (fs.existsSync(skillPath)) {
-    return fs.readFileSync(skillPath, 'utf8');
+  const skillPath = path.join(SKILL_DIR, 'SKILL.md');
+  if (!fs.existsSync(skillPath)) {
+    throw new Error('SKILL.md not found');
   }
-  const docsPath = path.join(__dirname, '..', 'docs', 'SKILL.md');
-  if (fs.existsSync(docsPath)) {
-    return fs.readFileSync(docsPath, 'utf8');
-  }
-  throw new Error('SKILL.md not found');
+  return bundleForSingleFile(fs.readFileSync(skillPath, 'utf8'), (rel) =>
+    fs.readFileSync(path.join(SKILL_DIR, rel), 'utf8')
+  );
 }
 
 // Transform content for GitHub Copilot format
@@ -211,39 +263,76 @@ Apply these rules when working with Adobe Experience Manager workflow code.
   return header + result.join('\n').trim();
 }
 
+function resolveBaseDir(config, targetDir, isGlobal) {
+  if (isGlobal && !config.global) {
+    console.log(
+      `  ${colors.yellow}⚠${colors.reset} ${config.name} does not support global installation, using project-level`
+    );
+    return targetDir;
+  }
+  return isGlobal ? config.global : targetDir;
+}
+
+function targetDirFor(config, baseDir) {
+  return path.join(baseDir, config.dir === '.' ? '' : config.dir);
+}
+
+// True only for a folder this installer wrote, so uninstall never removes someone else's skill.
+function isOurSkillFolder(folder) {
+  const skillFile = path.join(folder, 'SKILL.md');
+  return (
+    fs.existsSync(skillFile) &&
+    new RegExp(`^name:\\s*${SKILL_ID}\\s*$`, 'm').test(fs.readFileSync(skillFile, 'utf8'))
+  );
+}
+
+function copySkillFolder(destination) {
+  fs.rmSync(destination, { recursive: true, force: true });
+  fs.cpSync(SKILL_DIR, destination, { recursive: true });
+}
+
 function installForPlatform(platform, targetDir, isGlobal) {
   const config = PLATFORMS[platform];
   if (!config) {
     throw new Error(`Unknown platform: ${platform}`);
   }
 
-  if (isGlobal && !config.global) {
-    console.log(
-      `  ${colors.yellow}⚠${colors.reset} ${config.name} does not support global installation, using project-level`
-    );
-    isGlobal = false;
+  const baseDir = resolveBaseDir(config, targetDir, isGlobal);
+  const skillsDir = targetDirFor(config, baseDir);
+  fs.mkdirSync(skillsDir, { recursive: true });
+
+  let installed;
+  if (config.folder) {
+    const folder = path.join(skillsDir, config.folder);
+    if (fs.existsSync(folder) && !isOurSkillFolder(folder)) {
+      throw new Error(`${folder} exists and is not this skill; not overwriting`);
+    }
+    copySkillFolder(folder);
+    removeLegacyFile(config, skillsDir);
+    installed = path.join(folder, config.filename);
+  } else {
+    installed = path.join(skillsDir, config.filename);
+    fs.writeFileSync(installed, config.transform(getSkillContent()));
   }
 
-  const baseDir = isGlobal ? config.global : targetDir;
-  const skillsDir = path.join(baseDir, config.dir === '.' ? '' : config.dir);
-  const skillFile = path.join(skillsDir, config.filename);
-
-  // Create directories if they don't exist
-  if (!fs.existsSync(skillsDir)) {
-    fs.mkdirSync(skillsDir, { recursive: true });
-  }
-
-  // Get and transform content
-  const rawContent = getSkillContent();
-  const transformedContent = config.transform(rawContent);
-
-  // Write file
-  fs.writeFileSync(skillFile, transformedContent);
   console.log(
-    `  ${colors.green}✓${colors.reset} ${config.name}: ${colors.blue}${skillFile}${colors.reset}`
+    `  ${colors.green}✓${colors.reset} ${config.name}: ${colors.blue}${installed}${colors.reset}`
   );
+  return installed;
+}
 
-  return skillFile;
+// Up to v1.3.0 the Claude Code target was a single file, which Claude Code does not load as a
+// skill. Remove it when it is ours.
+function removeLegacyFile(config, skillsDir) {
+  if (!config.legacyFile) return;
+  const legacy = path.join(skillsDir, config.legacyFile);
+  if (
+    fs.existsSync(legacy) &&
+    new RegExp(`^name:\\s*${SKILL_ID}\\s*$`, 'm').test(fs.readFileSync(legacy, 'utf8'))
+  ) {
+    fs.unlinkSync(legacy);
+    console.log(`  ${colors.green}✓${colors.reset} Removed old single-file install: ${legacy}`);
+  }
 }
 
 function uninstallForPlatform(platform, targetDir, isGlobal) {
@@ -251,8 +340,19 @@ function uninstallForPlatform(platform, targetDir, isGlobal) {
   if (!config) return;
 
   const baseDir = isGlobal && config.global ? config.global : targetDir;
-  const skillFile = path.join(baseDir, config.dir === '.' ? '' : config.dir, config.filename);
+  const skillsDir = targetDirFor(config, baseDir);
 
+  if (config.folder) {
+    const folder = path.join(skillsDir, config.folder);
+    if (isOurSkillFolder(folder)) {
+      fs.rmSync(folder, { recursive: true, force: true });
+      console.log(`  ${colors.green}✓${colors.reset} Removed ${config.name}: ${folder}`);
+    }
+    removeLegacyFile(config, skillsDir);
+    return;
+  }
+
+  const skillFile = path.join(skillsDir, config.filename);
   if (fs.existsSync(skillFile)) {
     fs.unlinkSync(skillFile);
     console.log(`  ${colors.green}✓${colors.reset} Removed ${config.name}: ${skillFile}`);
@@ -294,7 +394,7 @@ Examples:
   npx aem-workflow-skill -p all -u          # Uninstall from all platforms
 
 Supported Platforms:
-  claude    - Claude Code (.claude/skills/)
+  claude    - Claude Code (.claude/skills/aem-workflow-development/)
   copilot   - GitHub Copilot (.github/copilot-instructions.md)
   gemini    - Google Gemini CLI (GEMINI.md)
   cursor    - Cursor AI (.cursor/rules/ or .cursorrules)
@@ -311,7 +411,8 @@ function listPlatforms() {
   for (const [key, config] of Object.entries(PLATFORMS)) {
     const globalSupport = config.global ? '✓' : '✗';
     console.log(`  ${key.padEnd(10)} - ${config.name}`);
-    console.log(`              Location: ${config.dir}/${config.filename}`);
+    const location = config.folder ? `${config.folder}/${config.filename}` : config.filename;
+    console.log(`              Location: ${config.dir}/${location}`);
     console.log(`              Global:   ${globalSupport}`);
     console.log('');
   }
@@ -410,6 +511,9 @@ if (require.main === module) {
 
 module.exports = {
   PLATFORMS,
+  INLINED_REFERENCES,
+  bundleForSingleFile,
+  getSkillContent,
   transformForCopilot,
   transformForGemini,
   transformForCursor,

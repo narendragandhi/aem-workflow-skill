@@ -65,5 +65,5 @@ coverage/
 
 # Node
 node_modules/
-package-lock.json
+# package-lock.json is committed: CI uses npm ci and the npm cache
 npm-debug.log*

@@ -6,12 +6,32 @@ on:
       - 'v*'
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+      # Fails if releases/aem-workflow-development.skill is stale
+      - run: npm test
+      - name: Tag matches package version
+        run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - run: mvn -B -f verification/pom.xml verify
+
   release:
+    needs: verify
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      releases: write
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
