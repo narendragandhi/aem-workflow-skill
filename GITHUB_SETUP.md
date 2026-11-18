@@ -188,7 +188,7 @@ jobs:
 
       - name: Check skill structure
         run: |
-          test -f docs/SKILL.md || exit 1
+          test -f skills/aem-workflow-development/SKILL.md || exit 1
           test -f releases/aem-workflow-development.skill || exit 1
 
       - name: Validate Markdown

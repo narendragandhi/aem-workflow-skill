@@ -1,0 +1,15 @@
+{
+  "name": "aem-workflow-skill",
+  "description": "AEM workflow development skill for Claude Code",
+  "owner": {
+    "name": "narendragandhi"
+  },
+  "plugins": [
+    {
+      "name": "aem-workflow-skill",
+      "source": "./",
+      "description": "AEM as a Cloud Service workflow development: process steps, approvals routed through the Inbox, retry-safe steps, long-running jobs and LLM steps with human review",
+      "version": "1.4.0"
+    }
+  ]
+}

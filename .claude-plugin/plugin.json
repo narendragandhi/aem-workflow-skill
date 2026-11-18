@@ -1,7 +1,7 @@
 {
   "name": "aem-workflow-skill",
-  "description": "Claude AI skill for AEM workflow development in Adobe Experience Manager as a Cloud Service",
-  "version": "1.0.0",
+  "description": "AEM as a Cloud Service workflow development: process steps, approvals routed through the Inbox, retry-safe steps, long-running jobs and LLM steps with human review",
+  "version": "1.4.0",
   "author": {
     "name": "narendragandhi"
   },

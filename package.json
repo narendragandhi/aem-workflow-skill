@@ -1,6 +1,6 @@
 {
   "name": "aem-workflow-skill",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "AI coding assistant skill for AEM workflow development - supports Claude Code, GitHub Copilot, Gemini, Cursor, and Windsurf",
   "keywords": [
     "adobe-experience-manager",
@@ -32,16 +32,18 @@
   "files": [
     "bin/",
     "skills/",
-    "docs/",
     "examples/"
   ],
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   },
   "scripts": {
     "test": "jest",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "format:check": "prettier --check bin test tools",
+    "package": "node tools/package-skill.js",
+    "verify:java": "mvn -B -f verification/pom.xml verify",
     "prepare": "npm run lint && npm test"
   },
   "devDependencies": {

@@ -68,7 +68,7 @@ public class DamAssetWorkflowProcessTemplate implements WorkflowProcess {
             processAsset(asset, assetResource, resolver, processArgs);
             
             // Update workflow metadata
-            MetaDataMap workflowMetadata = workItem.getWorkflow().getMetaDataMap();
+            MetaDataMap workflowMetadata = workItem.getWorkflowData().getMetaDataMap();
             workflowMetadata.put("assetProcessed", assetPath);
             workflowMetadata.put("processedAt", new Date());
             

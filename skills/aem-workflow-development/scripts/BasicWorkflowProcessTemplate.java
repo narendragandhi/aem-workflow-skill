@@ -54,7 +54,7 @@ public class BasicWorkflowProcessTemplate implements WorkflowProcess {
             LOG.debug("Process arguments: {}", processArgs);
             
             // 5. Access workflow metadata (shared across all steps)
-            MetaDataMap workflowMetadata = workItem.getWorkflow().getMetaDataMap();
+            MetaDataMap workflowMetadata = workItem.getWorkflowData().getMetaDataMap();
             
             // 6. TODO: Implement your custom workflow logic here
             performCustomProcessing(resource, resolver, processArgs);

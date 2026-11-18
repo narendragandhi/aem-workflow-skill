@@ -5,6 +5,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-11-17
+
+Templates and guidance were checked by running them in real workflows on an AEM author
+(SDK 2026.7.27083). Several things the skill taught did not hold up there.
+
+### Fixed
+
+- **Workflow data was not persisted.** The skill and every template wrote to
+  `workItem.getWorkflow().getMetaDataMap()`, which the engine does not save from a process
+  step. All guidance and templates now use `workItem.getWorkflowData().getMetaDataMap()`.
+- **Dialog Participant Step data.** The skill said dialog values land in workflow metadata.
+  The Inbox posts `./`-prefixed fields to the payload and drops the rest; the comment goes to
+  workflow history. The dialog section now says so and shows how to read and clean up
+  payload fields.
+- **Approval decisions.** Approvals are modelled as a participant step followed by an OR
+  Split whose branches the reviewer picks as "Next Step" in the Inbox; the recorder starts
+  each branch with `DECISION:approve` or `DECISION:reject`. The recorder now fails closed on a
+  missing or misspelled decision (it used to default to approval), reads the reviewer and
+  comment from history, persists its results, and records each work item once.
+- **Claude Code install did not load as a skill.** `npx aem-workflow-skill` wrote
+  `.claude/skills/aem-workflow.md`; Claude Code loads `.claude/skills/<name>/SKILL.md`. It now
+  installs the `aem-workflow-development` folder with references and scripts, and removes the
+  old file on upgrade.
+- **`/plugin marketplace add` failed**: added `.claude-plugin/marketplace.json`.
+- **Async job step did not wait.** Replaced with a `WorkflowExternalProcess` step and an
+  idempotent `JobConsumer` (`scripts/long-running-job/`).
+- `WorkflowSession.restartWorkflow` returns `void`; no-arg `getActiveWorkItems()` returns
+  `WorkItem[]`.
+- Multi-class template files could not compile when copied; each class now has its own file.
+
+### Added
+
+- **Retries, Idempotency and Failure Routing** section.
+- **AI and LLM Steps in Workflows** section and `scripts/ai-proposal/`: the model proposes a
+  validated value, the reviewer approves or rejects in the Inbox (optionally correcting it),
+  deterministic code applies it.
+- `verification/`: compiles every template and example against the AEM SDK API with
+  `-Werror`, runs JUnit behaviour tests, and `run-on-aem.sh` runs the templates in real
+  workflows on a local author and cleans up afterwards.
+- CI on Node 20/22/24 (lint, format, tests) and a Java job; releases run the same gates and
+  check that the tag matches `package.json`.
+- `npm run package` builds the `.skill` file; a test fails if the committed package is stale.
+
+### Changed
+
+- **Skill folder renamed** to `skills/aem-workflow-development`, matching the skill's `name`
+  and the `.skill` package; references and scripts moved inside it.
+- **Smaller SKILL.md (1,855 → ~1,100 lines).** Security code, App Builder UI, ACS Commons and
+  asset/multi-resource detail moved to `references/`.
+- Single-file installs (Copilot, Gemini, Cursor, Windsurf) get the moved references appended.
+- Node 18 or later is required for the installer.
+
+### Known limitations
+
+- The long-running job template has not completed on a real instance: the test author's
+  repository was damaged and its Sling job scheduler did not fire external-process polling.
+  The job consumer and its service-user setup did work there.
+
 ## [1.3.0] - 2026-02-24
 
 ### Added

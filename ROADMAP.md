@@ -68,7 +68,7 @@ CLI options: `--platform`, `--list`, `--global`, `--uninstall`
 
 **Status**: Planned
 **Effort**: Low
-**Files**: `docs/scripts/EmailNotificationTemplate.java`
+**Files**: `skills/aem-workflow-development/scripts/EmailNotificationTemplate.java`
 
 Production-ready email notification process step:
 
@@ -105,7 +105,7 @@ Comprehensive migration documentation:
 
 **Status**: Planned
 **Effort**: Medium
-**Files**: `docs/scripts/ExternalAPIIntegrationTemplate.java`
+**Files**: `skills/aem-workflow-development/scripts/ExternalAPIIntegrationTemplate.java`
 
 Template for integrating workflows with external systems:
 
@@ -151,9 +151,11 @@ Documentation covering:
 
 #### 11. Advanced Error Recovery Patterns
 
-**Status**: Planned
+**Status**: Partly done. Retry-safe (idempotent) steps, transient vs permanent errors and
+routing failures to a person are covered in SKILL.md and `scripts/long-running-job/`.
+Compensation/rollback and alerting remain open.
 **Effort**: Medium
-**Files**: `docs/scripts/ErrorRecoveryTemplate.java`
+**Files**: `skills/aem-workflow-development/scripts/ErrorRecoveryTemplate.java`
 
 Patterns for robust error handling:
 
@@ -240,7 +242,7 @@ i18n patterns:
 ### v1.0.0 Templates (Initial Release)
 
 ```
-docs/scripts/
+skills/aem-workflow-development/scripts/
 ├── BasicWorkflowProcessTemplate.java      # Foundation workflow process
 ├── DamAssetWorkflowProcessTemplate.java   # Asset processing
 └── WorkflowStarterTemplate.java           # Programmatic workflow start
